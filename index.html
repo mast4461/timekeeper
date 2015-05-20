@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang='en'>
+	<head>
+		<meta charset='utf-8'>
+		<title>timekeeper</title>
+
+		<!-- Styles -->
+		<link rel='stylesheet' type='text/css' href='dist/main.css'>
+		<link rel='stylesheet' type='text/css' href='bower_components/normalize.css/normalize.css'>
+
+		<!-- External scripts -->
+		<script type='text/javascript' src='external/d3.v3.js'></script>
+	</head>
+
+	<body>
+		<div id='left-column'>
+			<div id='chart-container'></div>
+		</div>
+		<div id='right-column'>
+			<div id='activity-container'></div>
+			<form onSubmit='return onSubmitActivity();'>
+				<input type='text' id='activity-name-input' class='block' placeholder="Enter new activity here">
+			</form>
+		</div>
+
+		<!-- Internal scripts -->
+		<script type='text/javascript'>
+			// Declaring global variables
+			var onSubmitActivity;
+		</script>
+		<script type='text/javascript' src='dist/main.js'></script>
+	</body>
+</html>
