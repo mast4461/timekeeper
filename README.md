@@ -1,5 +1,5 @@
 # timekeeper
-A tool to help keeping track of time spent working on different tasks.
+A tool to help keep track of time spent working on different tasks.
 
 ## Start it
 - Run npm install and bower install.
