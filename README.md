@@ -7,4 +7,4 @@ A tool to help keep track of time spent working on different tasks.
 - Update this readme if more steps are needed.
 
 ## Data persistence
-Navigate to server and run `python server.py`
+Navigate to _server_ and run `python server.py`
