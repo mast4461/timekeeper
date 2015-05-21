@@ -14,7 +14,7 @@ def read():
 	return t
 
 def get_file_name():
-	return 'server-data' + os.pathsep + time.strftime('%Y-%m-%d') + '.txt'
+	return 'server-data' + os.sep + time.strftime('%Y-%m-%d') + '.txt'
 
 def init_file():
 	print "Initializing file"
