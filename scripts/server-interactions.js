@@ -39,7 +39,10 @@ exports.write = function(data) {
 exports.read = function(callback) {
 	var xhr = createCORSRequest('GET', url);
 	xhr.onload = function() {
-		callback(JSON.parse(xhr.responseText));
+		var obj = JSON.parse(xhr.responseText);
+		console.log("Server read");
+		console.log(obj);
+		callback(obj);
 	}
 	xhr.send();
 };

@@ -1,4 +1,5 @@
 import time
+import os
 
 def write(json_string):
 	f = open(get_file_name(), 'w')
@@ -13,7 +14,7 @@ def read():
 	return t
 
 def get_file_name():
-	return time.strftime('%Y-%m-%d') + '.txt'
+	return 'server-data' + os.pathsep + time.strftime('%Y-%m-%d') + '.txt'
 
 def init_file():
 	print "Initializing file"

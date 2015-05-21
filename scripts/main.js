@@ -357,8 +357,8 @@ var activateUpdateDisplayTimer = function() {
 		updateLastTime(data);
 		updateExtremaAndScales();
 		updateDisplay();
-		serverInteractions.write(data);
-	}, 1000);
+		writeDataToServer();
+	}, 1500);
 }
 
 var deactivateUpdateDisplayTimer = function() {
@@ -366,9 +366,21 @@ var deactivateUpdateDisplayTimer = function() {
 }
 
 
-serverInteractions.read(function(readData) {
-	data = readData;
-});
+var writeDataToServer = function() {
+	serverInteractions.write({
+		data: data,
+		activityNames: activityNames,
+	});
+};
+
+var readDataFromServer = function() {
+	serverInteractions.read(function(readData) {
+		data = readData.data;
+		activityNames = readData.activityNames;
+	});
+};
+
+readDataFromServer();
 
 onResize();
 rescaleSvgToContainer();
