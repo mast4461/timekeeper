@@ -41,9 +41,9 @@ var printData = function(data) {
 };
 
 
-var extrema, tScale, tScaleInverse, iScale;
+var tScale, tScaleInverse, iScale;
 var updateExtremaAndScales = function() {
-	extrema = {
+	var extrema = {
 		t: {
 			max: d3.max(data, function(d) {return d.t;}),
 			min: d3.min(data, function(d) {return d.t;}),
@@ -56,6 +56,9 @@ var updateExtremaAndScales = function() {
 
 	var tRange = [wMargin, w-wMargin];
 	var tDomain = [extrema.t.min, extrema.t.max];
+	if (tDomain[1] - tDomain[0] < 60000) {
+		tDomain[1] = tDomain[0] + 60000;
+	};
 
 	tScale = d3.scale.linear()
 		.domain(tDomain)
@@ -370,6 +373,7 @@ var writeDataToServer = function() {
 	serverInteractions.write({
 		data: data,
 		activityNames: activityNames,
+		activityCounter: activityCounter
 	});
 };
 
@@ -377,6 +381,7 @@ var readDataFromServer = function() {
 	serverInteractions.read(function(readData) {
 		data = readData.data;
 		activityNames = readData.activityNames;
+		activityCounter = readData.activityCounter;
 	});
 };
 
