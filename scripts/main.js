@@ -1,25 +1,28 @@
 var testData = require('./test-data.js');
 var serverInteractions = require('./server-interactions.js');
+var time = require('./time');
 
 // Width and height of chart
 var chartContainer = d3.select('#chart-container');
 var activityContainer = d3.select('#activity-container');
+var checkboxContainer = d3.select('#checkbox-container');
+
 
 var w = 500;
 var hUnit = 50;
 var r = 10;
 var wMargin = 4*r;
-var activityCounter = 1;
 var finished = false;
 var sortedData;
 
 var updateDisplayTimer;
 
-var activityNames = ['Administrative work'];
+var activityNames = ['Default'];
 
 
 // [time, index]
 var data = testData.data3;
+
 
 var sortData = function(data) {
 	data.sort(function(a,b) {
@@ -41,21 +44,21 @@ var printData = function(data) {
 };
 
 
-var tScale, tScaleInverse, iScale;
-var updateExtremaAndScales = function() {
-	var extrema = {
-		t: {
-			max: d3.max(data, function(d) {return d.t;}),
-			min: d3.min(data, function(d) {return d.t;}),
-		},
-		i: {
-			max: d3.max(data, function(d) {return d.i;}),
-			min: d3.min(data, function(d) {return d.i;}),
-		},
+// Helper function for creating accessor function
+var df = function(key) {
+	return function(d) {
+		return d[key];
 	};
+};
 
+gt = df('t');
+gi = df('i');
+
+
+var tScale, tScaleInverse, iScale;
+var updateScales = function() {
 	var tRange = [wMargin, w-wMargin];
-	var tDomain = [extrema.t.min, extrema.t.max];
+	var tDomain = d3.extent(data, gt);
 	if (tDomain[1] - tDomain[0] < 60000) {
 		tDomain[1] = tDomain[0] + 60000;
 	};
@@ -70,20 +73,20 @@ var updateExtremaAndScales = function() {
 		.range(tDomain)
 	;
 
+
+	var iDomain = d3.extent(data, gi);
 	iScale = d3.scale.linear()
-		.domain([extrema.i.min-0.5, extrema.i.max+0.5])
-		.range([0,(extrema.i.max-extrema.i.min+1)*hUnit])
+		.domain(iDomain)
+		.range([hUnit*0.5,(iDomain[1]-iDomain[0]+0.5)*hUnit])
 	;
 };
 
 var xFunction = function(d) {
 	return tScale(d.t);
-	// return d.t;
 };
 
 var yFunction = function(d) {
 	return iScale(d.i);
-	// return d.i;
 };
 
 // Helper for drawing path
@@ -108,24 +111,24 @@ var drag = d3.behavior.drag()
 				.attr('text-anchor', 'middle')
 				.attr('x', x)
 				.attr('y', parseInt(target.attr('cy')) - r)
-				.text('' + millisToHhmm(t))
+				.text('' + time.timeMs2Hhmm(t))
 			;
 		}
 	)
 	.on('drag',
-		function() {
+		function(d, i) {
 			var target = d3.select(this);
 
 			var x = d3.event.x;
 			target.attr('cx', x);
 
 			var t = tScaleInverse(x);
-			data[target.attr('i')].t = t;
+			data[i].t = t;
 
 			svg
 				.select('text')
 				.attr('x', x)
-				.text('' + millisToHhmm(t))
+				.text('' + time.timeMs2Hhmm(t))
 			;
 
 			updateDisplay();
@@ -137,7 +140,7 @@ var drag = d3.behavior.drag()
 			updateLastTime(data);
 
 			// Update the graphics
-			updateExtremaAndScales();
+			updateScales();
 			updateDisplay();
 
 			data = copyData(sortedData);
@@ -159,6 +162,10 @@ var svg = chartContainer
 	.attr('height', '100%')
 ;
 
+var lineContainer = svg.append('g');
+var pathContainer = svg.append('g');
+var circleContainer = svg.append('g');
+
 
 var updateDisplay = function() {
 	// Copy the data and sort it
@@ -168,15 +175,15 @@ var updateDisplay = function() {
 	sortedData[0].i = sortedData[1].i;
 
 	// Sum the time on each activity
-	var sums = sumTime(sortedData);
+	var sums = time.sum(sortedData);
 
 	// Rescale the chart container if necessary
 	chartContainer
-		.style('height', (sums.length*hUnit+1)+'px')
+		.style('height', (activityNames.length*hUnit)+'px')
 	;
 
 	// Horizontal lines for each activity
-	var lines = svg.selectAll('line').data(sums);
+	var lines = lineContainer.selectAll('line').data(sums);
 	lines
 		.enter()
 		.append('line')
@@ -189,17 +196,17 @@ var updateDisplay = function() {
 	;
 
 	// Update the path
-	var lineGraph = svg.selectAll('path').data([sortedData])
+	var lineGraph = pathContainer.selectAll('path').data([sortedData])
 	lineGraph
 		.enter()
 		.append('path')
 	;
 	lineGraph
-		.attr('d',lineFunction)
+		.attr('d', lineFunction)
 	;
 
 	// Join the data for the circles
-	var circles = svg.selectAll('circle').data(sortedData);
+	var circles = circleContainer.selectAll('circle').data(sortedData);
 
 	// Create elements for new circles and add drag handler
 	circles
@@ -213,20 +220,19 @@ var updateDisplay = function() {
 		.attr('cx', xFunction)
 		.attr('cy', yFunction)
 		.attr('r', r)
-		.attr('i',function(d,i) {return i;})
 	;
 
 	// Create divs for all activities
 	var activities = activityContainer
 		.selectAll('.activity')
 		.data(sums)
+	;
 
 	activities
 		.enter()
 		.append('div')
 		.classed('activity', true)
 		.classed('block', true)
-		.attr('i', function(d,i) {return i;})
 		.call(switchToActivity)
 	;
 
@@ -238,14 +244,25 @@ var updateDisplay = function() {
 
 	activities
 		.html(function(d) {
-			// h is for hours in this scope
-			var h = d.t/3600000;
-			var hQuarter = Math.round(h*4)/4;
-			// h = Math.round(h*4)/4;
-			var hStr = h.toFixed(4);
-			var hQuarterStr = hQuarter.toFixed(2);
-			return activityNames[d.i] + '<br>' + hQuarterStr + ' (' + hStr + ') h'
+			return activityNames[d.i] + '<br>' + time.durationMsToString(d.t);
 		})
+	;
+
+
+
+	// Checkboxes
+	var checkboxes = checkboxContainer
+		.selectAll('.checkbox')
+		.data(sums)
+	;
+
+	checkboxes
+		.enter()
+		.append('div')
+		.classed('checkbox', true)
+		.append('input')
+		.attr('type', 'checkbox')
+		.on('change', getCheckBoxesCount)
 	;
 
 
@@ -255,40 +272,25 @@ var updateDisplay = function() {
 	rescaleSvgToContainer();
 };
 
-var millisToHhmm = function(millis) {
-	var date = new Date(millis);
-	return date.toTimeString().slice(0,5);
+
+var getCheckBoxesCount = function() {
+	var nChecked = 0;
+	var tTotal = 0;
+	var checkboxes = checkboxContainer
+		.selectAll('.checkbox input')
+		.each(function(d) {
+			if (this.checked) tTotal += d.t;
+		});
+
+	console.log(time.ms2h(tTotal));
+
+	d3.select('#checkbox-sum')
+		.html(time.ms2h(tTotal));
 };
 
 
-var sumTime = function(data) {
-	// Initialize empty object
-	var time = {};
 
-	// For each point in the data except the earliest
-	for (var k = 1; k < data.length; k++) {
-		// Calculate the time difference to the previous point
-		var i = data[k].i;
-		var t = data[k].t - data[k-1].t;
-		// If no time has been summed for that index
-		if (time[i] === undefined || time[i] === null) {
-			// Set the time to t
-			time[i] = t;
-		} else {
-			// Add t to the time
-			time[i] += t;
-		}
-	}
 
-	// Initialize an empty array
-	var timeArray = [];
-	// For each entry in the time object push an object to the array
-	for (var i in time) {
-		timeArray.push({t: time[i], i:i});
-	}
-
-	return timeArray;
-};
 
 var rescaleSvgToContainer = function() {
 	var helper = function(attribute) {
@@ -307,7 +309,7 @@ var rescaleSvgToContainer = function() {
 
 var onResize = function() {
 	rescaleSvgToContainer();
-	updateExtremaAndScales();
+	updateScales();
 	updateDisplay();
 };
 window.onresize = onResize;
@@ -328,39 +330,36 @@ onSubmitActivity = function() {
 };
 
 var addNewActivity = function(activityName) {
-	newDataPoint(activityCounter);
+	newDataPoint(activityNames.length);
 	activityNames.push(activityName);
-	activityCounter++;
 };
 
 var switchToActivity = d3.behavior.drag()
-	.on('dragstart', function() {
-		var i = d3.select(this).attr('i');
+	.on('dragstart', function(d, i) {
 		newDataPoint(i);
 	})
 ;
 
 var newDataPoint = function(i) {
-	var now = new Date();
 	data.push({
 		i: i,
-		t: now.getTime()
+		t: time.now()
 	});
 	onResize();
 };
 
 var updateLastTime = function(data) {
 	if (!finished) {
-		data[data.length-1].t = (new Date()).getTime();
+		data[data.length-1].t = time.now();
 	}
 }
 
 var activateUpdateDisplayTimer = function() {
 	updateDisplayTimer = setInterval(function() {
 		updateLastTime(data);
-		updateExtremaAndScales();
+		updateScales();
 		updateDisplay();
-		writeDataToServer();
+		// writeDataToServer();
 	}, 1500);
 }
 
@@ -372,16 +371,14 @@ var deactivateUpdateDisplayTimer = function() {
 var writeDataToServer = function() {
 	serverInteractions.write({
 		data: data,
-		activityNames: activityNames,
-		activityCounter: activityCounter
+		activityNames: activityNames
 	});
 };
 
 var readDataFromServer = function() {
 	serverInteractions.read(function(readData) {
 		data = readData.data;
-		activityNames = readData.activityNames;
-		activityCounter = readData.activityCounter;
+		activityNames = readData.activityNames
 	});
 };
 

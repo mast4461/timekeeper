@@ -13,14 +13,21 @@
 	</head>
 
 	<body>
-		<div id='left-column'>
-			<div id='chart-container'></div>
+		<div>
+			<div id='left-column'>
+				<div id='chart-container'></div>
+			</div>
+			<div id='right-column'>
+				<div id='activity-container'></div>
+				<form onSubmit='return onSubmitActivity();'>
+					<input type='text' id='activity-name-input' class='block' placeholder="Enter new activity here">
+				</form>
+			</div>
 		</div>
-		<div id='right-column'>
-			<div id='activity-container'></div>
-			<form onSubmit='return onSubmitActivity();'>
-				<input type='text' id='activity-name-input' class='block' placeholder="Enter new activity here">
-			</form>
+
+		<div id>
+			<div id="checkbox-container"></div>
+			<div id="checkbox-sum"></div>
 		</div>
 
 		<!-- Internal scripts -->
