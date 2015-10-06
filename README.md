@@ -2,9 +2,9 @@
 A tool to help keep track of time spent working on different tasks.
 
 ## Start it
-- Oops, bourbon is needed too.
-- Run `npm install` and `bower install`.
-- Run `gulp serve` or `open index.html`.
+
+- Run `npm install`.
+- Run `gulp serve`.
 - Update this readme if more steps are needed.
 
 ## Data persistence
