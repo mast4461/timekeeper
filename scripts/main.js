@@ -4,7 +4,7 @@ var time = require('./time');
 
 // Width and height of chart
 var chartContainer = d3.select('#chart-container');
-var activityContainer = d3.select('#activity-container');
+var activitiesContainers = d3.selectAll('.activities-container');
 var checkboxContainer = d3.select('#checkbox-container');
 
 
@@ -18,10 +18,14 @@ var sortedData;
 var updateDisplayTimer;
 
 var activityNames = ['Default'];
+var data;
 
+(function() {
+	var temp = testData.get(1);
+	data = temp.data;
+	activityNames = temp.activityNames;
+})();
 
-// [time, index]
-var data = testData.data3;
 
 
 var sortData = function(data) {
@@ -166,7 +170,7 @@ var lineContainer = svg.append('g');
 var pathContainer = svg.append('g');
 var circleContainer = svg.append('g');
 
-
+var sums;
 var updateDisplay = function() {
 	// Copy the data and sort it
 	sortedData = sortData(copyData(data));
@@ -175,7 +179,7 @@ var updateDisplay = function() {
 	sortedData[0].i = sortedData[1].i;
 
 	// Sum the time on each activity
-	var sums = time.sum(sortedData);
+	sums = time.sum(sortedData);
 
 	// Rescale the chart container if necessary
 	chartContainer
@@ -223,7 +227,7 @@ var updateDisplay = function() {
 	;
 
 	// Create divs for all activities
-	var activities = activityContainer
+	var activities = activitiesContainers
 		.selectAll('.activity')
 		.data(sums)
 	;
@@ -260,32 +264,33 @@ var updateDisplay = function() {
 		.enter()
 		.append('div')
 		.classed('checkbox', true)
+		.style('height', hUnit + 'px')
 		.append('input')
 		.attr('type', 'checkbox')
-		.on('change', getCheckBoxesCount)
+		.on('change', updateDisplay)
 	;
 
+	updateCheckBoxesCount(sums);
 
 	// printData(sortedData);
 
 	// printData(sums);
-	rescaleSvgToContainer();
+	rescaleSvgToContainer(sums);
 };
 
 
-var getCheckBoxesCount = function() {
-	var nChecked = 0;
+var updateCheckBoxesCount = function() {
 	var tTotal = 0;
 	var checkboxes = checkboxContainer
 		.selectAll('.checkbox input')
-		.each(function(d) {
-			if (this.checked) tTotal += d.t;
-		});
+		.each(function(d, i) {
+			if (this.checked) tTotal += sums[i].t;
+		})
+	;
 
-	console.log(time.ms2h(tTotal));
 
 	d3.select('#checkbox-sum')
-		.html(time.ms2h(tTotal));
+		.html(time.durationMsToString(tTotal));
 };
 
 
