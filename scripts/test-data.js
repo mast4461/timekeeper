@@ -23,6 +23,14 @@ data.push([
 	{t: 1431368929534, i: 0},
 ]);
 
+data.push([
+	{t:  1000, i: 0},
+	{t:  9000, i: 0},
+	{t: 20000, i: 1},
+	{t: 49000, i: 2},
+	{t: 54000, i: 0},
+]);
+
 var processData = function(data) {
 	var t = time.now();
 	var tLast = data[data.length-1].t;

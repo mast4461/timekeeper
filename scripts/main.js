@@ -2,29 +2,61 @@ var testData = require('./test-data.js');
 var serverInteractions = require('./server-interactions.js');
 var time = require('./time');
 
-// Width and height of chart
-var chartContainer = d3.select('#chart-container');
-var activitiesContainers = d3.selectAll('.activities-container');
-var checkboxContainer = d3.select('#checkbox-container');
 
-
-var w = 500;
+// Declare variables
 var hUnit = 50;
 var r = 10;
 var wMargin = 4*r;
 var finished = false;
 var sortedData;
+var nCheckboxesPerRow = 5;
 
 var updateDisplayTimer;
 
+// Get testdata
 var activityNames = ['Default'];
 var data;
-
 (function() {
-	var temp = testData.get(1);
+	var temp = testData.get(3);
 	data = temp.data;
 	activityNames = temp.activityNames;
 })();
+
+// Select objects
+var activitiesList = d3.select('section#chart #right-column ul.activities');
+var sumsActivitiesTable = d3.select('section#sums table#activities');
+var checkboxContainer = d3.select('#checkbox-container');
+
+// Create svg
+var svg = d3.select('section#chart #left-column #chart-container')
+	.append('svg')
+	.attr('width', '100%')
+;
+
+var lineContainer = svg.append('g');
+var pathContainer = svg.append('g');
+var circleContainer = svg.append('g');
+
+
+
+var sumsRow = sumsActivitiesTable
+	.append('tr')
+	.attr('id', 'sums')
+;
+
+sumsRow
+	.append('td')
+	.html('Sums')
+;
+
+for (var i = 0; i < nCheckboxesPerRow; i++) {
+	sumsRow
+		.append('td')
+		.classed('sum', true)
+	;
+}
+
+
 
 
 
@@ -61,6 +93,7 @@ gi = df('i');
 
 var tScale, tScaleInverse, iScale;
 var updateScales = function() {
+	var w = parseInt(svg.style('width'));
 	var tRange = [wMargin, w-wMargin];
 	var tDomain = d3.extent(data, gt);
 	if (tDomain[1] - tDomain[0] < 60000) {
@@ -109,7 +142,6 @@ var drag = d3.behavior.drag()
 			var x = target.attr('cx');
 			var t = tScaleInverse(x);
 
-			yText =
 			svg
 				.append('text')
 				.attr('text-anchor', 'middle')
@@ -159,17 +191,6 @@ var drag = d3.behavior.drag()
 	)
 ;
 
-// Create svg
-var svg = chartContainer
-	.append('svg')
-	.attr('width', '100%')
-	.attr('height', '100%')
-;
-
-var lineContainer = svg.append('g');
-var pathContainer = svg.append('g');
-var circleContainer = svg.append('g');
-
 var sums;
 var updateDisplay = function() {
 	// Copy the data and sort it
@@ -182,9 +203,8 @@ var updateDisplay = function() {
 	sums = time.sum(sortedData);
 
 	// Rescale the chart container if necessary
-	chartContainer
-		.style('height', (activityNames.length*hUnit)+'px')
-	;
+	svg.attr('height', activityNames.length*hUnit);
+
 
 	// Horizontal lines for each activity
 	var lines = lineContainer.selectAll('line').data(sums);
@@ -194,7 +214,7 @@ var updateDisplay = function() {
 	;
 	lines
 		.attr('x1', 0)
-		.attr('x2', w)
+		.attr('x2', "100%")
 		.attr('y1', yFunction)
 		.attr('y2', yFunction)
 	;
@@ -227,14 +247,14 @@ var updateDisplay = function() {
 	;
 
 	// Create divs for all activities
-	var activities = activitiesContainers
+	var activities = activitiesList
 		.selectAll('.activity')
 		.data(sums)
 	;
 
 	activities
 		.enter()
-		.append('div')
+		.append('li')
 		.classed('activity', true)
 		.classed('block', true)
 		.call(switchToActivity)
@@ -253,67 +273,100 @@ var updateDisplay = function() {
 	;
 
 
-
-	// Checkboxes
-	var checkboxes = checkboxContainer
-		.selectAll('.checkbox')
+	// Sums stuff
+	// Select all rows with checkboxes
+	var sumsActivitiesRows = sumsActivitiesTable
+		.selectAll('tr.checkbox-row')
 		.data(sums)
 	;
 
-	checkboxes
+	// Add new rows if needed
+	var newRows = sumsActivitiesRows
 		.enter()
-		.append('div')
-		.classed('checkbox', true)
-		.style('height', hUnit + 'px')
-		.append('input')
-		.attr('type', 'checkbox')
-		.on('change', updateDisplay)
+		.append('tr')
+		.classed('checkbox-row', true)
 	;
 
-	updateCheckBoxesCount(sums);
 
-	// printData(sortedData);
+	// Add activity name cells
+	newRows
+		.append('td')
+		.classed('activity', true)
+	;
 
-	// printData(sums);
-	rescaleSvgToContainer(sums);
-};
+	// Add checkbox cells
+	newRows
+		.each(createCheckboxes)
+	;
 
-
-var updateCheckBoxesCount = function() {
-	var tTotal = 0;
-	var checkboxes = checkboxContainer
-		.selectAll('.checkbox input')
-		.each(function(d, i) {
-			if (this.checked) tTotal += sums[i].t;
+	// Update text in activities
+	sumsActivitiesTable
+		.selectAll('.activity')
+		.data(sums)
+		.html(function(d) {
+			return activityNames[d.i] + '<br>' + time.durationMsToString(d.t);
 		})
 	;
 
+	// Move the sums row to the bottom of the table
+	sumsActivitiesTable.node().appendChild(sumsRow.node());
 
-	d3.select('#checkbox-sum')
-		.html(time.durationMsToString(tTotal));
+
+	updateCheckboxSums();
+	// printData(sortedData);
+
+	// printData(sums);
 };
 
+var createCheckboxes = function() {
+	var row = d3.select(this);
+	for (var i = 0; i < nCheckboxesPerRow; i++) {
+		row
+			.append('td')
+			.classed('checkbox', true)
+			.on('click', function(d,i) {
+				toggleCheckbox.bind(this)(d,i);
+				updateCheckboxSums.bind(this)(d,i);
+			})
+		;
+	}
+};
 
+var toggleCheckbox = function(d, i) {
+	var cell = d3.select(this);
+	cell.classed('checked', !cell.classed('checked'));
+};
 
+var updateCheckboxSums = function() {
+	var tTotals = d3.range(nCheckboxesPerRow);
+	tTotals = tTotals.map(function() {return 0;});
 
+	sumsActivitiesTable.selectAll('.checkbox-row')
+		.each(function(d1, i1) {
+			var checkboxes = d3.select(this).selectAll('.checkbox');
+			checkboxes
+				.each(function(d2, i2) {
+					if (d3.select(this).classed('checked'))	{
+						tTotals[i2] += d1.t;
+					}
+				})
+			;
+		})
+	;
 
-var rescaleSvgToContainer = function() {
-	var helper = function(attribute) {
-		return parseInt(chartContainer.style(attribute));
-	};
-	w = helper('width');
-	h = helper('height');
-	// wMargin = w*0.1;
-
-	svg
-		.attr('width', w)
-		.attr('height', h)
-		.attr('viewBox', '0 0 ' + w + ' ' + h)
+	var sumCells = sumsActivitiesTable.selectAll('td.sum');
+	sumCells
+		.data(tTotals)
+		.html(function(d) {
+			return time.durationMsToString(d).split(" ").join("<br>");
+		})
 	;
 };
 
+
+
+
 var onResize = function() {
-	rescaleSvgToContainer();
 	updateScales();
 	updateDisplay();
 };
@@ -387,8 +440,7 @@ var readDataFromServer = function() {
 	});
 };
 
-readDataFromServer();
+// readDataFromServer();
 
 onResize();
-rescaleSvgToContainer();
 activateUpdateDisplayTimer();

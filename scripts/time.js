@@ -27,16 +27,23 @@ var sum = function(data) {
 	return timeArray;
 };
 
+// milliseconds to hours
 var ms2h = function(ms) {
 	return ms/3600000;
 };
 
 var durationMsToString = function(ms) {
-	var h = ms2h(ms);
-	var hQuarter = Math.round(h*4)/4;
-	var hStr = h.toFixed(4);
-	var hQuarterStr = hQuarter.toFixed(2);
-	return hQuarterStr + ' (' + hStr + ') h'
+	return ms2hq(ms) + ' (' + ms2h(ms).toFixed(4) + ') h'
+};
+
+// milliseconds to hours rounded to nearest quarter
+var ms2hq = function(ms) {
+	return quantize(ms2h(ms), 0.25).toFixed(2);
+};
+
+// round hours to nearest quarter hour
+var quantize = function(number, quanta) {
+	return Math.round(number/quanta)*quanta;
 };
 
 var timeMs2Hhmm = function(ms) {
