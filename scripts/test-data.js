@@ -1,10 +1,10 @@
-var time = require('./time');
+var timeModule = require('./time-module');
 
 data = [];
 
 data.push([
-	{t: time.now()-1000, i:0},
-	{t: time.now(), i:0},
+	{t: timeModule.now()-1000, i:0},
+	{t: timeModule.now(), i:0},
 ]);
 
 data.push([
@@ -32,7 +32,7 @@ data.push([
 ]);
 
 var processData = function(data) {
-	var t = time.now();
+	var t = timeModule.now();
 	var tLast = data[data.length-1].t;
 	return data.map(function(item) {
 		item.t += t - tLast;

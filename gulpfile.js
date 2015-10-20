@@ -23,7 +23,7 @@ gulp.task('sass', function(){
 });
 
 //Live reload--------------------------------------------------------------------|
-gulp.task('serve', ['scripts','sass'], function () {
+var liveReload = function () {
 
 	// Compile if sass or js has changed
 	gulp.watch('styles/**/*.sass', ['sass']);
@@ -44,4 +44,6 @@ gulp.task('serve', ['scripts','sass'], function () {
 			}
 		}
 	});
-});
+};
+gulp.task('serve', ['scripts','sass'], liveReload);
+gulp.task('default', ['scripts','sass'], liveReload);

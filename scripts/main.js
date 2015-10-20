@@ -1,6 +1,8 @@
-var testData = require('./test-data.js');
-var serverInteractions = require('./server-interactions.js');
-var time = require('./time');
+var testData = require('./test-data');
+var serverInteractions = require('./server-interactions');
+var timeModule = require('./time-module');
+var sumsModule = require('./sums-module');
+var fileModule = require('./file-module');
 
 
 // Declare variables
@@ -9,9 +11,29 @@ var r = 10;
 var wMargin = 4*r;
 var finished = false;
 var sortedData;
-var nCheckboxesPerRow = 5;
 
 var updateDisplayTimer;
+
+
+// Add button listeners
+d3.select('section#menu #save')
+	.on('click', function() {
+		fileModule.save({
+			data: data,
+			activityNames: activityNames
+		});
+	})
+;
+
+d3.select('section#menu #load')
+	.on('change', function() {
+		fileModule.load().then(function(loadedData) {
+			console.log(loadedData);
+			data = loadedData.data;
+			activityNames = loadedData.activityNames;
+		});
+	})
+;
 
 // Get testdata
 var activityNames = ['Default'];
@@ -24,8 +46,6 @@ var data;
 
 // Select objects
 var activitiesList = d3.select('section#chart #right-column ul.activities');
-var sumsActivitiesTable = d3.select('section#sums table#activities');
-var checkboxContainer = d3.select('#checkbox-container');
 
 // Create svg
 var svg = d3.select('section#chart #left-column #chart-container')
@@ -36,26 +56,6 @@ var svg = d3.select('section#chart #left-column #chart-container')
 var lineContainer = svg.append('g');
 var pathContainer = svg.append('g');
 var circleContainer = svg.append('g');
-
-
-
-var sumsRow = sumsActivitiesTable
-	.append('tr')
-	.attr('id', 'sums')
-;
-
-sumsRow
-	.append('td')
-	.html('Sums')
-;
-
-for (var i = 0; i < nCheckboxesPerRow; i++) {
-	sumsRow
-		.append('td')
-		.classed('sum', true)
-	;
-}
-
 
 
 
@@ -147,7 +147,7 @@ var drag = d3.behavior.drag()
 				.attr('text-anchor', 'middle')
 				.attr('x', x)
 				.attr('y', parseInt(target.attr('cy')) - r)
-				.text('' + time.timeMs2Hhmm(t))
+				.text('' + timeModule.timeMs2Hhmm(t))
 			;
 		}
 	)
@@ -164,7 +164,7 @@ var drag = d3.behavior.drag()
 			svg
 				.select('text')
 				.attr('x', x)
-				.text('' + time.timeMs2Hhmm(t))
+				.text('' + timeModule.timeMs2Hhmm(t))
 			;
 
 			updateDisplay();
@@ -200,7 +200,7 @@ var updateDisplay = function() {
 	sortedData[0].i = sortedData[1].i;
 
 	// Sum the time on each activity
-	sums = time.sum(sortedData);
+	sums = timeModule.sum(sortedData);
 
 	// Rescale the chart container if necessary
 	svg.attr('height', activityNames.length*hUnit);
@@ -257,7 +257,7 @@ var updateDisplay = function() {
 		.append('li')
 		.classed('activity', true)
 		.classed('block', true)
-		.call(switchToActivity)
+		.on('click', switchToActivity)
 	;
 
 	activities
@@ -268,102 +268,16 @@ var updateDisplay = function() {
 
 	activities
 		.html(function(d) {
-			return activityNames[d.i] + '<br>' + time.durationMsToString(d.t);
+			return activityNames[d.i] + '<br>' + timeModule.durationMsToString(d.t);
 		})
 	;
 
 
-	// Sums stuff
-	// Select all rows with checkboxes
-	var sumsActivitiesRows = sumsActivitiesTable
-		.selectAll('tr.checkbox-row')
-		.data(sums)
-	;
-
-	// Add new rows if needed
-	var newRows = sumsActivitiesRows
-		.enter()
-		.append('tr')
-		.classed('checkbox-row', true)
-	;
-
-
-	// Add activity name cells
-	newRows
-		.append('td')
-		.classed('activity', true)
-	;
-
-	// Add checkbox cells
-	newRows
-		.each(createCheckboxes)
-	;
-
-	// Update text in activities
-	sumsActivitiesTable
-		.selectAll('.activity')
-		.data(sums)
-		.html(function(d) {
-			return activityNames[d.i] + '<br>' + time.durationMsToString(d.t);
-		})
-	;
-
-	// Move the sums row to the bottom of the table
-	sumsActivitiesTable.node().appendChild(sumsRow.node());
-
-
-	updateCheckboxSums();
+	sumsModule.updateDisplay(sums, activityNames);
 	// printData(sortedData);
 
 	// printData(sums);
 };
-
-var createCheckboxes = function() {
-	var row = d3.select(this);
-	for (var i = 0; i < nCheckboxesPerRow; i++) {
-		row
-			.append('td')
-			.classed('checkbox', true)
-			.on('click', function(d,i) {
-				toggleCheckbox.bind(this)(d,i);
-				updateCheckboxSums.bind(this)(d,i);
-			})
-		;
-	}
-};
-
-var toggleCheckbox = function(d, i) {
-	var cell = d3.select(this);
-	cell.classed('checked', !cell.classed('checked'));
-};
-
-var updateCheckboxSums = function() {
-	var tTotals = d3.range(nCheckboxesPerRow);
-	tTotals = tTotals.map(function() {return 0;});
-
-	sumsActivitiesTable.selectAll('.checkbox-row')
-		.each(function(d1, i1) {
-			var checkboxes = d3.select(this).selectAll('.checkbox');
-			checkboxes
-				.each(function(d2, i2) {
-					if (d3.select(this).classed('checked'))	{
-						tTotals[i2] += d1.t;
-					}
-				})
-			;
-		})
-	;
-
-	var sumCells = sumsActivitiesTable.selectAll('td.sum');
-	sumCells
-		.data(tTotals)
-		.html(function(d) {
-			return time.durationMsToString(d).split(" ").join("<br>");
-		})
-	;
-};
-
-
 
 
 var onResize = function() {
@@ -392,23 +306,21 @@ var addNewActivity = function(activityName) {
 	activityNames.push(activityName);
 };
 
-var switchToActivity = d3.behavior.drag()
-	.on('dragstart', function(d, i) {
-		newDataPoint(i);
-	})
-;
+var switchToActivity = function(d, i) {
+	newDataPoint(i);
+};
 
 var newDataPoint = function(i) {
 	data.push({
 		i: i,
-		t: time.now()
+		t: timeModule.now()
 	});
 	onResize();
 };
 
 var updateLastTime = function(data) {
 	if (!finished) {
-		data[data.length-1].t = time.now();
+		data[data.length-1].t = timeModule.now();
 	}
 }
 
