@@ -2,9 +2,9 @@ var now = function() {
 	return (new Date()).getTime();
 };
 
-var sum = function(data) {
-	// Initialize empty object
-	var time = {};
+var sum = function(data, activityNames) {
+	// Initialize array of zeros
+	var timeArray = activityNames.map(function() {return 0;});
 
 	// For each point in the data except the earliest
 	for (var k = 1; k < data.length; k++) {
@@ -13,18 +13,13 @@ var sum = function(data) {
 		var t = data[k].t - data[k-1].t;
 
 		// Add the time for the activity
-		if (!(i in time)) time[i] = 0;
-		time[i] += t;
+		timeArray[i] += t;
 	}
 
-	// Initialize an empty array
-	var timeArray = [];
-	// For each entry in the time object push an object to the array
-	for (var i in time) {
-		timeArray.push({i:i, t: time[i]});
-	}
-
-	return timeArray;
+	// Return array of indices and durations
+	return timeArray.map(function(t, i) {
+		return {i:i, t:t};
+	});
 };
 
 // milliseconds to hours

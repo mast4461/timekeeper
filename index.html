@@ -26,11 +26,12 @@
 				</div>
 				<div id="right-column">
 					<ul class="activities"></ul>
+					<form onSubmit="return onSubmitActivity();">
+						<input type="text" id="activity-name-input" class="block" placeholder="Enter new activity here">
+					</form>
 				</div>
 			</div>
-			<form onSubmit="return onSubmitActivity();">
-				<input type="text" id="activity-name-input" class="block" placeholder="Enter new activity here">
-			</form>
+
 		</section>
 
 		<!-- Section for summing times of different activities -->

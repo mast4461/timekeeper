@@ -53,10 +53,16 @@ var svg = d3.select('section#chart #left-column #chart-container')
 	.attr('width', '100%')
 ;
 
-var lineContainer = svg.append('g');
-var pathContainer = svg.append('g');
-var circleContainer = svg.append('g');
+var lineContainer = svg.append('g').attr('id', 'line-container');
+var pathContainer = svg.append('g').attr('id', 'path-container');
+var circleContainer = svg.append('g').attr('id', 'circle-container');
+var axisContainer = svg.append('g').attr('id', 'axis-container');
 
+var timeAxis = d3.svg.axis()
+	.ticks(5)
+	.orient('top')
+	.tickFormat(timeModule.timeMs2Hhmm)
+;
 
 
 
@@ -91,31 +97,37 @@ gt = df('t');
 gi = df('i');
 
 
-var tScale, tScaleInverse, iScale;
+var durationMin = 5*60*1000;
+var tScale, iScale;
 var updateScales = function() {
 	var w = parseInt(svg.style('width'));
-	var tRange = [wMargin, w-wMargin];
+	// var tRange = [wMargin, w-wMargin];
+	var tRange = [0, w];
 	var tDomain = d3.extent(data, gt);
-	if (tDomain[1] - tDomain[0] < 60000) {
-		tDomain[1] = tDomain[0] + 60000;
+
+	if (tDomain[1] - tDomain[0] < durationMin) {
+		tDomain[1] = tDomain[0] + durationMin;
 	};
+
+	var tMargin = (tDomain[1]-tDomain[0])*0.05;
+	tDomain[0] -= tMargin;
+	tDomain[1] += tMargin;
 
 	tScale = d3.scale.linear()
 		.domain(tDomain)
 		.range(tRange)
 	;
 
-	tScaleInverse = d3.scale.linear()
-		.domain(tRange)
-		.range(tDomain)
-	;
-
-
-	var iDomain = d3.extent(data, gi);
+	// var iDomain = d3.extent(data, gi);
+	var iDomain = [0, activityNames.length];
+	var iRange = [hUnit*0.5,(iDomain[1]-iDomain[0]+0.5)*hUnit];
 	iScale = d3.scale.linear()
 		.domain(iDomain)
-		.range([hUnit*0.5,(iDomain[1]-iDomain[0]+0.5)*hUnit])
+		.rangeRound(iRange)
+		.clamp(true)
 	;
+
+	timeAxis.scale(tScale);
 };
 
 var xFunction = function(d) {
@@ -133,16 +145,16 @@ var lineFunction = d3.svg.line()
 	.interpolate('step-before')
 ;
 
-var drag = d3.behavior.drag()
+var dragCircle = d3.behavior.drag()
 	.on('dragstart',
 		function() {
 			deactivateUpdateDisplayTimer();
 
 			var target = d3.select(this);
 			var x = target.attr('cx');
-			var t = tScaleInverse(x);
+			var t = tScale.invert(x);
 
-			svg
+			circleContainer
 				.append('text')
 				.attr('text-anchor', 'middle')
 				.attr('x', x)
@@ -156,14 +168,24 @@ var drag = d3.behavior.drag()
 			var target = d3.select(this);
 
 			var x = d3.event.x;
-			target.attr('cx', x);
+			var y = d3.event.y;
+			// target.attr('cy', y);
 
-			var t = tScaleInverse(x);
+			var t = tScale.invert(x);
+			var iNew = Math.round(iScale.invert(y));
 			data[i].t = t;
+			data[i].i = iNew;
 
-			svg
+			var yClamped = iScale(iNew);
+
+
+			target.attr('cx', x);
+			target.attr('cy', y);
+
+			circleContainer
 				.select('text')
 				.attr('x', x)
+				.attr('y', yClamped - r)
 				.text('' + timeModule.timeMs2Hhmm(t))
 			;
 
@@ -181,7 +203,7 @@ var drag = d3.behavior.drag()
 
 			data = copyData(sortedData);
 
-			svg
+			circleContainer
 				.selectAll('text')
 				.remove()
 			;
@@ -200,10 +222,16 @@ var updateDisplay = function() {
 	sortedData[0].i = sortedData[1].i;
 
 	// Sum the time on each activity
-	sums = timeModule.sum(sortedData);
+	sums = timeModule.sum(sortedData, activityNames);
 
 	// Rescale the chart container if necessary
-	svg.attr('height', activityNames.length*hUnit);
+	var height = activityNames.length*hUnit
+	svg.attr('height', height + hUnit);
+
+	// Update timeAxis
+	axisContainer.attr('transform', 'translate(0,' + (height + hUnit*0.75) + ')');
+	axisContainer.call(timeAxis);
+	timeAxis.ticks(5);
 
 
 	// Horizontal lines for each activity
@@ -236,7 +264,7 @@ var updateDisplay = function() {
 	circles
 		.enter()
 		.append('circle')
-		.call(drag)
+		.call(dragCircle)
 	;
 
 	// Update attributes for all updating circles
