@@ -3,6 +3,7 @@ var serverInteractions = require('./server-interactions');
 var timeModule = require('./time-module');
 var sumsModule = require('./sums-module');
 var fileModule = require('./file-module');
+var util = require('./util');
 
 
 // Declare variables
@@ -53,10 +54,22 @@ var svg = d3.select('section#chart #left-column #chart-container')
 	.attr('width', '100%')
 ;
 
+var svgBackground = svg.append('rect')
+	.attr('width', '100%')
+	.attr('height', '100%')
+	.attr('fill', 'rgba(0,0,0,0)')
+;
 var lineContainer = svg.append('g').attr('id', 'line-container');
 var pathContainer = svg.append('g').attr('id', 'path-container');
 var circleContainer = svg.append('g').attr('id', 'circle-container');
 var axisContainer = svg.append('g').attr('id', 'axis-container');
+axisContainer
+	.append('rect')
+	.attr('width', '100%')
+	.attr('height', '36')
+	.attr('transform', 'translate(0, -36)')
+	.attr('fill', 'rgba(0,0,0,0.5)')
+;
 
 var timeAxis = d3.svg.axis()
 	.ticks(5)
@@ -64,6 +77,16 @@ var timeAxis = d3.svg.axis()
 	.tickFormat(timeModule.timeMs2Hhmm)
 ;
 
+var zoomHandler = d3.behavior.zoom();
+axisContainer.call(zoomHandler);
+
+zoomHandler.on('zoom', function() {
+	updateDisplay()
+});
+
+document.body.addEventListener('wheel', function() {
+	console.log(arguments);
+});
 
 
 var sortData = function(data) {
@@ -119,7 +142,7 @@ var updateScales = function() {
 	;
 
 	// var iDomain = d3.extent(data, gi);
-	var iDomain = [0, activityNames.length];
+	var iDomain = [0, activityNames.length-1];
 	var iRange = [hUnit*0.5,(iDomain[1]-iDomain[0]+0.5)*hUnit];
 	iScale = d3.scale.linear()
 		.domain(iDomain)
@@ -128,7 +151,9 @@ var updateScales = function() {
 	;
 
 	timeAxis.scale(tScale);
+	zoomHandler.x(tScale);
 };
+updateScales();
 
 var xFunction = function(d) {
 	return tScale(d.t);
@@ -176,16 +201,13 @@ var dragCircle = d3.behavior.drag()
 			data[i].t = t;
 			data[i].i = iNew;
 
-			var yClamped = iScale(iNew);
-
-
 			target.attr('cx', x);
 			target.attr('cy', y);
 
 			circleContainer
 				.select('text')
 				.attr('x', x)
-				.attr('y', yClamped - r)
+				.attr('y', iScale(iNew) - r)
 				.text('' + timeModule.timeMs2Hhmm(t))
 			;
 
@@ -198,7 +220,7 @@ var dragCircle = d3.behavior.drag()
 			updateLastTime(data);
 
 			// Update the graphics
-			updateScales();
+			// updateScales();
 			updateDisplay();
 
 			data = copyData(sortedData);
@@ -225,11 +247,11 @@ var updateDisplay = function() {
 	sums = timeModule.sum(sortedData, activityNames);
 
 	// Rescale the chart container if necessary
-	var height = activityNames.length*hUnit
-	svg.attr('height', height + hUnit);
+	var height = activityNames.length*hUnit + 36
+	svg.attr('height', height);
 
 	// Update timeAxis
-	axisContainer.attr('transform', 'translate(0,' + (height + hUnit*0.75) + ')');
+	axisContainer.attr('transform', 'translate(0,' + height + ')');
 	axisContainer.call(timeAxis);
 	timeAxis.ticks(5);
 
@@ -309,8 +331,9 @@ var updateDisplay = function() {
 
 
 var onResize = function() {
-	updateScales();
+	// updateScales();
 	updateDisplay();
+	tScale.range([0, parseInt(svg.style('width'))]);
 };
 window.onresize = onResize;
 
@@ -355,7 +378,7 @@ var updateLastTime = function(data) {
 var activateUpdateDisplayTimer = function() {
 	updateDisplayTimer = setInterval(function() {
 		updateLastTime(data);
-		updateScales();
+		// updateScales();
 		updateDisplay();
 		// writeDataToServer();
 	}, 1500);
