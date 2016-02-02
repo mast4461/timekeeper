@@ -3,6 +3,7 @@ var serverInteractions = require('./server-interactions');
 var timeModule = require('./time-module');
 var sumsModule = require('./sums-module');
 var fileModule = require('./file-module');
+var persistenceModule = require('./persistence-module');
 var util = require('./util');
 
 
@@ -18,7 +19,7 @@ var updateDisplayTimer;
 
 // Add button listeners
 d3.select('section#menu #save')
-	.on('click', function() {
+	.on('click', function () {
 		fileModule.save({
 			data: data,
 			activityNames: activityNames
@@ -27,8 +28,8 @@ d3.select('section#menu #save')
 ;
 
 d3.select('section#menu #load')
-	.on('change', function() {
-		fileModule.load().then(function(loadedData) {
+	.on('change', function () {
+		fileModule.load().then(function (loadedData) {
 			console.log(loadedData);
 			data = loadedData.data;
 			activityNames = loadedData.activityNames;
@@ -39,7 +40,7 @@ d3.select('section#menu #load')
 // Get testdata
 var activityNames = ['Default'];
 var data;
-(function() {
+(function () {
 	var temp = testData.get(3);
 	data = temp.data;
 	activityNames = temp.activityNames;
@@ -80,29 +81,30 @@ var timeAxis = d3.svg.axis()
 var zoomHandler = d3.behavior.zoom();
 axisContainer.call(zoomHandler);
 
-zoomHandler.on('zoom', function() {
-	updateDisplay()
+zoomHandler.on('zoom', function () {
+	// console.log(d3.event.translate);
+	updateDisplay();
 });
 
-document.body.addEventListener('wheel', function() {
-	console.log(arguments);
+document.body.addEventListener('wheel', function (event) {
+	console.log(event);
 });
 
 
-var sortData = function(data) {
-	data.sort(function(a,b) {
+var sortData = function (data) {
+	data.sort(function (a,b) {
 		return a.t-b.t;
 	});
 	return data;
 };
 
-var copyData = function(data) {
+var copyData = function (data) {
 	return data.slice(0);
 };
 
-var printData = function(data) {
+var printData = function (data) {
 	var str = "";
-	data.forEach(function(item){
+	data.forEach(function (item){
 		str += "\nt: " + item.t + " i: " + item.i;
 	});
 	console.log(str);
@@ -110,8 +112,8 @@ var printData = function(data) {
 
 
 // Helper function for creating accessor function
-var df = function(key) {
-	return function(d) {
+var df = function (key) {
+	return function (d) {
 		return d[key];
 	};
 };
@@ -122,7 +124,7 @@ gi = df('i');
 
 var durationMin = 5*60*1000;
 var tScale, iScale;
-var updateScales = function() {
+var updateScales = function () {
 	var w = parseInt(svg.style('width'));
 	// var tRange = [wMargin, w-wMargin];
 	var tRange = [0, w];
@@ -155,11 +157,11 @@ var updateScales = function() {
 };
 updateScales();
 
-var xFunction = function(d) {
+var xFunction = function (d) {
 	return tScale(d.t);
 };
 
-var yFunction = function(d) {
+var yFunction = function (d) {
 	return iScale(d.i);
 };
 
@@ -172,7 +174,7 @@ var lineFunction = d3.svg.line()
 
 var dragCircle = d3.behavior.drag()
 	.on('dragstart',
-		function() {
+		function () {
 			deactivateUpdateDisplayTimer();
 
 			var target = d3.select(this);
@@ -189,7 +191,7 @@ var dragCircle = d3.behavior.drag()
 		}
 	)
 	.on('drag',
-		function(d, i) {
+		function (d, i) {
 			var target = d3.select(this);
 
 			var x = d3.event.x;
@@ -215,7 +217,7 @@ var dragCircle = d3.behavior.drag()
 		}
 	)
 	.on('dragend',
-		function() {
+		function () {
 			// Update the last data point
 			updateLastTime(data);
 
@@ -231,12 +233,14 @@ var dragCircle = d3.behavior.drag()
 			;
 
 			activateUpdateDisplayTimer();
+
+			saveData();
 		}
 	)
 ;
 
 var sums;
-var updateDisplay = function() {
+var updateDisplay = function () {
 	// Copy the data and sort it
 	sortedData = sortData(copyData(data));
 
@@ -317,7 +321,7 @@ var updateDisplay = function() {
 
 
 	activities
-		.html(function(d) {
+		.html(function (d) {
 			return activityNames[d.i] + '<br>' + timeModule.durationMsToString(d.t);
 		})
 	;
@@ -330,7 +334,7 @@ var updateDisplay = function() {
 };
 
 
-var onResize = function() {
+var onResize = function () {
 	// updateScales();
 	updateDisplay();
 	tScale.range([0, parseInt(svg.style('width'))]);
@@ -338,7 +342,7 @@ var onResize = function() {
 window.onresize = onResize;
 
 // onSubmitActivity is declared in a script element in index.html
-onSubmitActivity = function() {
+onSubmitActivity = function () {
 	updateLastTime(data);
 
 	var inputElement = document.getElementById('activity-name-input');
@@ -352,58 +356,59 @@ onSubmitActivity = function() {
 	return false;
 };
 
-var addNewActivity = function(activityName) {
+var addNewActivity = function (activityName) {
 	newDataPoint(activityNames.length);
 	activityNames.push(activityName);
 };
 
-var switchToActivity = function(d, i) {
+var switchToActivity = function (d, i) {
 	newDataPoint(i);
 };
 
-var newDataPoint = function(i) {
+var newDataPoint = function (i) {
 	data.push({
 		i: i,
 		t: timeModule.now()
 	});
+
+	saveData();
+
 	onResize();
 };
 
-var updateLastTime = function(data) {
+var updateLastTime = function (data) {
 	if (!finished) {
 		data[data.length-1].t = timeModule.now();
 	}
-}
+};
 
-var activateUpdateDisplayTimer = function() {
-	updateDisplayTimer = setInterval(function() {
+var activateUpdateDisplayTimer = function () {
+	updateDisplayTimer = util.setIntervalNow(function () {
 		updateLastTime(data);
-		// updateScales();
 		updateDisplay();
-		// writeDataToServer();
 	}, 1500);
-}
+};
 
-var deactivateUpdateDisplayTimer = function() {
+var deactivateUpdateDisplayTimer = function () {
 	clearInterval(updateDisplayTimer);
-}
+};
 
-
-var writeDataToServer = function() {
-	serverInteractions.write({
+var saveData = function () {
+	persistenceModule.saveData({
 		data: data,
 		activityNames: activityNames
 	});
 };
 
-var readDataFromServer = function() {
-	serverInteractions.read(function(readData) {
-		data = readData.data;
-		activityNames = readData.activityNames
-	});
+var loadData = function () {
+	var loadedData = persistenceModule.loadData();
+	if (loadedData) {
+		data = loadedData.data;
+		activityNames = loadedData.activityNames;
+	}
 };
 
-// readDataFromServer();
+loadData();
 
 onResize();
 activateUpdateDisplayTimer();
