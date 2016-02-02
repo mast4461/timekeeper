@@ -1,54 +1,53 @@
 <!DOCTYPE html>
 <html lang="en">
-	<head>
-		<meta charset="utf-8">
-		<title>timekeeper</title>
+<head>
+	<meta charset="utf-8">
+	<title>timekeeper</title>
 
-		<!-- Styles -->
-		<link rel="stylesheet" type="text/css" href="dist/main.css">
+	<!-- Styles -->
+	<link rel="stylesheet" type="text/css" href="dist/main.css">
 
-		<!-- External scripts -->
-		<script type="text/javascript" src="external/d3.v3.js"></script>
-	</head>
+	<!-- External scripts -->
+	<script type="text/javascript" src="external/d3.v3.js"></script>
+</head>
+<body>
+<!-- Section for menu buttons -->
+<section id="menu">
+	<input id="load" type="file" class="block"></input>
+	<div id="save" class="block">save data</div>
+</section>
 
-	<body>
-		<!-- Section for menu buttons -->
-		<section id="menu">
-			<input id="load" type="file" class="block"></input>
-			<div id="save" class="block">save data</div>
-		</section>
+<!-- Section for showing the timeline -->
+<section id="chart">
+	<div id="container">
+		<div id="left-column">
+			<div id="chart-container"></div>
+		</div>
+		<div id="right-column">
+			<ul class="activities"></ul>
+			<form onSubmit="return onSubmitActivity();">
+				<input type="text" id="activity-name-input" class="block" placeholder="Enter new activity here">
+			</form>
+		</div>
+	</div>
 
-		<!-- Section for showing the timeline -->
-		<section id="chart">
-			<div id="container">
-				<div id="left-column">
-					<div id="chart-container"></div>
-				</div>
-				<div id="right-column">
-					<ul class="activities"></ul>
-					<form onSubmit="return onSubmitActivity();">
-						<input type="text" id="activity-name-input" class="block" placeholder="Enter new activity here">
-					</form>
-				</div>
-			</div>
+</section>
 
-		</section>
+<!-- Section for summing times of different activities -->
+<section id="sums">
+	<table id="activities">
 
-		<!-- Section for summing times of different activities -->
-		<section id="sums">
-			<table id="activities">
+	</table>
+	<table id="sums">
+		<tr></tr>
+	</table>
+</section>
 
-			</table>
-			<table id="sums">
-				<tr></tr>
-			</table>
-		</section>
-
-		<!-- Internal scripts -->
-		<script type="text/javascript">
-			// Declaring global variables
-			var onSubmitActivity;
-		</script>
-		<script type="text/javascript" src="dist/main.js"></script>
-	</body>
+<!-- Internal scripts -->
+<script type="text/javascript">
+	// Declaring global variables
+	var onSubmitActivity;
+</script>
+<script type="text/javascript" src="dist/main.js"></script>
+</body>
 </html>
