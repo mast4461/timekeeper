@@ -136,8 +136,9 @@ gi = df('i');
 
 
 var durationMin = 5*60*1000;
+
 var tScale, iScale;
-var updateScales = function () {
+var updateTScale = function () {
 	var w = parseInt(svg.style('width'));
 	// var tRange = [wMargin, w-wMargin];
 	var tRange = [0, w];
@@ -156,7 +157,11 @@ var updateScales = function () {
 		.range(tRange)
 	;
 
-	// var iDomain = d3.extent(data, gi);
+	timeAxis.scale(tScale);
+	zoomHandler.x(tScale);
+};
+
+var updateIScale = function () {
 	var iDomain = [0, activityNames.length-1];
 	var iRange = [hUnit*0.5,(iDomain[1]-iDomain[0]+0.5)*hUnit];
 	iScale = d3.scale.linear()
@@ -164,11 +169,10 @@ var updateScales = function () {
 		.rangeRound(iRange)
 		.clamp(true)
 	;
-
-	timeAxis.scale(tScale);
-	zoomHandler.x(tScale);
 };
-updateScales();
+
+updateTScale();
+updateIScale();
 
 var xFunction = function (d) {
 	return tScale(d.t);
@@ -235,7 +239,6 @@ var dragCircle = d3.behavior.drag()
 			updateLastTime(data);
 
 			// Update the graphics
-			// updateScales();
 			updateDisplay();
 
 			data = copyData(sortedData);
@@ -348,11 +351,11 @@ var updateDisplay = function () {
 	// printData(sortedData);
 
 	// printData(sums);
+
 };
 
 
 var onResize = function () {
-	// updateScales();
 	updateDisplay();
 	tScale.range([0, parseInt(svg.style('width'))]);
 };
@@ -377,6 +380,7 @@ var addNewActivity = function (activityName) {
 	newDataPoint(activityNames.length);
 	activityNames.push(activityName);
 	saveData();
+	updateIScale();
 };
 
 var switchToActivity = function (d, i) {
@@ -404,7 +408,7 @@ var activateUpdateDisplayTimer = function () {
 	updateDisplayTimer = util.setIntervalNow(function () {
 		updateLastTime(data);
 		updateDisplay();
-	}, 1500);
+	}, 1000);
 };
 
 var deactivateUpdateDisplayTimer = function () {
@@ -424,6 +428,8 @@ var loadData = function () {
 		data = loadedData.data;
 		activityNames = loadedData.activityNames;
 	}
+	updateIScale();
+	updateTScale();
 };
 
 loadData();
