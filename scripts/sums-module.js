@@ -42,6 +42,7 @@ var updateDisplay = function(sums, activityNames) {
 		.append('tr')
 		.classed('checkbox-row', true)
 	;
+	sumsActivitiesRows.exit().remove();
 
 
 	// Add activity name cells

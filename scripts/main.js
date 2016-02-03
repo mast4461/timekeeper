@@ -37,14 +37,27 @@ d3.select('section#menu #load')
 	})
 ;
 
+var loadTestData = function (i) {
+	var temp = testData.get(i);
+	data = temp.data;
+	activityNames = temp.activityNames;
+	lastLoaded = temp;
+};
+
+d3.select('section#menu #clear')
+	.on('click', function () {
+		var confirmed = confirm("Clear current data?");
+		if (confirmed) {
+			loadTestData(0);
+			updateDisplay();
+		}
+	})
+;
+
 // Get testdata
 var activityNames = ['Default'];
 var data;
-(function () {
-	var temp = testData.get(3);
-	data = temp.data;
-	activityNames = temp.activityNames;
-})();
+loadTestData(3);
 
 // Select objects
 var activitiesList = d3.select('section#chart #right-column ul.activities');
@@ -266,6 +279,7 @@ var updateDisplay = function () {
 		.enter()
 		.append('line')
 	;
+	lines.exit().remove();
 	lines
 		.attr('x1', 0)
 		.attr('x2', "100%")
@@ -279,6 +293,7 @@ var updateDisplay = function () {
 		.enter()
 		.append('path')
 	;
+	lineGraph.exit().remove();
 	lineGraph
 		.attr('d', lineFunction)
 	;
@@ -292,6 +307,7 @@ var updateDisplay = function () {
 		.append('circle')
 		.call(dragCircle)
 	;
+	circles.exit().remove();
 
 	// Update attributes for all updating circles
 	circles
@@ -313,6 +329,7 @@ var updateDisplay = function () {
 		.classed('block', true)
 		.on('click', switchToActivity)
 	;
+	activities.exit().remove();
 
 	activities
 		.style('height', hUnit + 'px')
@@ -359,6 +376,7 @@ onSubmitActivity = function () {
 var addNewActivity = function (activityName) {
 	newDataPoint(activityNames.length);
 	activityNames.push(activityName);
+	saveData();
 };
 
 var switchToActivity = function (d, i) {
