@@ -1,0 +1,9 @@
+node_modules/
+scripts/
+styles/
+external/
+server/
+.*/
+gulpfile.js
+package.json
+README.md

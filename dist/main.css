@@ -1,0 +1,110 @@
+@font-face {
+  font-family: "Brandon";
+  src: url("../fonts/brandon.eot");
+  src: url("../fonts/brandon.woff");
+  src: url("../fonts/brandon.ttf"); }
+body, html, input {
+  height: 100%;
+  background-color: #eee;
+  font-family: Monaco, Courier, monospace; }
+
+#chart-container {
+  width: 100%; }
+  #chart-container svg {
+    background-color: #ddd; }
+    #chart-container svg #circle-container circle {
+      fill: #53BDE7;
+      stroke: #333;
+      stroke-width: 2; }
+    #chart-container svg #line-container line {
+      stroke: #bbb;
+      stroke-width: 1; }
+    #chart-container svg #path-container path {
+      stroke: #31AEE2;
+      stroke-width: 2;
+      fill: none; }
+    #chart-container svg #axis-container path {
+      stroke-width: 2;
+      fill: none; }
+    #chart-container svg #axis-container path, #chart-container svg #axis-container line {
+      stroke: #bbb; }
+    #chart-container svg text {
+      fill: #fff; }
+
+#right-column ul.activities {
+  background-color: #ddd;
+  margin: 0;
+  padding: 0;
+  list-style-type: none; }
+#right-column #activity-name-input {
+  height: 36px;
+  line-height: 36px; }
+
+body {
+  margin: 0;
+  font-size: 13px; }
+
+section#chart #container {
+  display: flex; }
+  section#chart #container div#left-column {
+    width: calc(100% - 200px); }
+  section#chart #container div#right-column {
+    width: 200px; }
+
+#summing-container {
+  float: left;
+  width: 100%;
+  background-color: #891; }
+
+#checkbox-container {
+  float: left; }
+
+#summing-container .activities-container {
+  float: left;
+  width: 200px; }
+
+#checkbox-column {
+  background-color: #891; }
+
+.checkbox-sum {
+  width: 100%;
+  float: left; }
+
+section#sums {
+  margin-top: 10px; }
+  section#sums table {
+    border-spacing: 0; }
+    section#sums table .activity {
+      padding: 4px;
+      color: #fff; }
+    section#sums table td {
+      min-width: 45px;
+      border-style: solid;
+      border-radius: 5px;
+      border-width: 1px;
+      border-color: #333;
+      background-color: #31AEE2;
+      box-sizing: border-box; }
+      section#sums table td.checked {
+        background-color: red; }
+
+section#menu {
+  display: flex;
+  margin-bottom: 1em; }
+  section#menu .block {
+    padding: 10px;
+    text-align: center; }
+    section#menu .block#load::before {
+      content: "load data ";
+      font-size: 13px; }
+
+.block {
+  width: 100%;
+  border-style: solid;
+  border-width: 1px;
+  border-color: #333;
+  border-radius: 5px;
+  background-color: #31AEE2;
+  box-sizing: border-box;
+  padding-left: 10px;
+  color: #fff; }
