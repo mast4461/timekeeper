@@ -380,8 +380,41 @@ var updateDisplay = function () {
 
 
 var onResize = function () {
+	var svgWidth = parseInt(svg.style('width'));
+	tScale.range([0, svgWidth]);
+
+	fixZoomHandlerOnResize(svgWidth);
+
 	updateDisplay();
-	tScale.range([0, parseInt(svg.style('width'))]);
+};
+
+var fixZoomHandlerOnResize = function (width) {
+	// http://stackoverflow.com/questions/25875316/d3-preserve-scale-translate-after-resetting-range
+	// Cache scale
+	var cacheScale = zoomHandler.scale();
+
+	// Cache translate
+	var cacheTranslate = zoomHandler.translate();
+
+	// Cache translate values as percentages/ratio of the full width
+	var cacheTranslatePerc = zoomHandler.translate().map(function (v) {
+	  return -v/width;
+	});
+
+	// Manually reset the zoomHandler
+	zoomHandler.scale(1).translate([0, 0]);
+
+	// Apply the tScale to the zoomHandler, (tScale should have been updated prebviously)
+	zoomHandler.x(tScale);
+
+	// Revert the scale back to our cached value
+	zoomHandler.scale(cacheScale);
+
+	// Overwrite the x value of cacheTranslate based on our cached percentage
+	cacheTranslate[0] = -width*cacheTranslatePerc[0];
+
+	// Finally apply the updated translate
+	zoomHandler.translate(cacheTranslate);
 };
 
 window.onresize = onResize;
