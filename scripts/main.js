@@ -49,6 +49,8 @@ d3.select('section#menu #clear')
 		var confirmed = confirm("Clear current data?");
 		if (confirmed) {
 			loadTestData(0);
+			saveData();
+			updateTScale();
 			updateDisplay();
 		}
 	})
@@ -57,7 +59,7 @@ d3.select('section#menu #clear')
 // Get testdata
 var activityNames = ['Default'];
 var data;
-loadTestData(3);
+loadTestData(0);
 
 // Select objects
 var activitiesList = d3.select('section#chart #right-column ul.activities');
@@ -170,9 +172,6 @@ var updateIScale = function () {
 		.clamp(true)
 	;
 };
-
-updateTScale();
-updateIScale();
 
 var xFunction = function (d) {
 	return tScale(d.t);
@@ -325,25 +324,50 @@ var updateDisplay = function () {
 		.data(sums)
 	;
 
-	activities
+	var newActivities = activities
 		.enter()
 		.append('li')
 		.classed('activity', true)
 		.classed('block', true)
+	;
+
+	newActivities
+		.append('div')
+		.classed('switch', true)
+		.text('>')
 		.on('click', switchToActivity)
 	;
+
+	newActivities
+		.append('input')
+		.attr('type', 'text')
+		.attr('value', function (d) {
+			return activityNames[d.i];
+		})
+		.on('input', function (d, i) {
+			activityNames[i] = this.value;
+		})
+	;
+
+	newActivities
+		.append('div')
+		.classed('time', true)
+	;
+
+	activitiesList.selectAll('.time')
+		.data(sums)
+		.text(function (d) {
+			return timeModule.durationMsToString(d.t);
+		})
+	;
+
+
+
 	activities.exit().remove();
 
 	activities
 		.style('height', hUnit + 'px')
 		.style('line-height', hUnit/2 + 'px')
-	;
-
-
-	activities
-		.html(function (d) {
-			return activityNames[d.i] + '<br>' + timeModule.durationMsToString(d.t);
-		})
 	;
 
 
@@ -359,6 +383,7 @@ var onResize = function () {
 	updateDisplay();
 	tScale.range([0, parseInt(svg.style('width'))]);
 };
+
 window.onresize = onResize;
 
 // onSubmitActivity is declared in a script element in index.html
@@ -377,14 +402,22 @@ onSubmitActivity = function () {
 };
 
 var addNewActivity = function (activityName) {
-	newDataPoint(activityNames.length);
 	activityNames.push(activityName);
-	saveData();
 	updateIScale();
+	updateDisplay();
+	switchToActivity(null, activityNames.length - 1);
+	saveData();
 };
 
 var switchToActivity = function (d, i) {
 	newDataPoint(i);
+	setActiveActivity(i);
+};
+
+var setActiveActivity = function (i) {
+	var switches = activitiesList.selectAll('.switch')
+		.classed('active', false);
+	d3.select(switches[0][i]).classed('active', true);
 };
 
 var newDataPoint = function (i) {
@@ -434,5 +467,8 @@ var loadData = function () {
 
 loadData();
 
+updateTScale();
+updateIScale();
 onResize();
 activateUpdateDisplayTimer();
+setActiveActivity(data[data.length-1].i);
