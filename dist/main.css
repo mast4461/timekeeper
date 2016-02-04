@@ -3,8 +3,10 @@
   src: url("../fonts/brandon.eot");
   src: url("../fonts/brandon.woff");
   src: url("../fonts/brandon.ttf"); }
+body, html {
+  height: 100%; }
+
 body, html, input {
-  height: 100%;
   background-color: #eee;
   font-family: Monaco, Courier, monospace; }
 
@@ -15,7 +17,8 @@ body, html, input {
     #chart-container svg #circle-container circle {
       fill: #53BDE7;
       stroke: #333;
-      stroke-width: 2; }
+      stroke-width: 2;
+      cursor: move; }
     #chart-container svg #line-container line {
       stroke: #bbb;
       stroke-width: 1; }
@@ -23,11 +26,13 @@ body, html, input {
       stroke: #31AEE2;
       stroke-width: 2;
       fill: none; }
-    #chart-container svg #axis-container path {
-      stroke-width: 2;
-      fill: none; }
-    #chart-container svg #axis-container path, #chart-container svg #axis-container line {
-      stroke: #bbb; }
+    #chart-container svg #axis-container {
+      cursor: crosshair; }
+      #chart-container svg #axis-container path {
+        stroke-width: 2;
+        fill: none; }
+      #chart-container svg #axis-container path, #chart-container svg #axis-container line {
+        stroke: #bbb; }
     #chart-container svg text {
       fill: #fff; }
 
@@ -39,6 +44,8 @@ body, html, input {
 #right-column #activity-name-input {
   height: 36px;
   line-height: 36px; }
+#right-column .switch {
+  cursor: pointer; }
 
 body {
   margin: 0;
@@ -56,20 +63,6 @@ section#chart #container {
   width: 100%;
   background-color: #891; }
 
-#checkbox-container {
-  float: left; }
-
-#summing-container .activities-container {
-  float: left;
-  width: 200px; }
-
-#checkbox-column {
-  background-color: #891; }
-
-.checkbox-sum {
-  width: 100%;
-  float: left; }
-
 section#sums {
   margin-top: 10px; }
   section#sums table {
@@ -86,7 +79,9 @@ section#sums {
       background-color: #31AEE2;
       box-sizing: border-box; }
       section#sums table td.checked {
-        background-color: red; }
+        background-color: #bcf5e7; }
+      section#sums table td.checkbox {
+        cursor: pointer; }
 
 section#menu {
   display: flex;
@@ -98,13 +93,29 @@ section#menu {
       content: "load data ";
       font-size: 13px; }
 
-.block {
-  width: 100%;
+.block, .switch {
   border-style: solid;
   border-width: 1px;
   border-color: #333;
   border-radius: 5px;
+  box-sizing: border-box; }
+
+.block {
+  position: relative;
+  width: 100%;
   background-color: #31AEE2;
-  box-sizing: border-box;
   padding-left: 10px;
   color: #fff; }
+  .block .switch {
+    position: absolute;
+    right: 0;
+    height: 100%;
+    width: 40px;
+    background-color: #009705;
+    line-height: 135%;
+    color: #000;
+    text-align: center;
+    font-weight: 100;
+    font-size: 30px; }
+    .block .switch.active {
+      background-color: #A6E22D; }
