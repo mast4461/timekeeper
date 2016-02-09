@@ -15,7 +15,7 @@ var save = function(data) {
 	downloadLink.href = URL.createObjectURL(textFileAsBlob);
 
 	downloadLink.click();
-}
+};
 
 var load = function() {
 	return new Promise(function(resolve) {
