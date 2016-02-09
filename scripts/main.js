@@ -96,14 +96,29 @@ var timeAxis = d3.svg.axis()
 var zoomHandler = d3.behavior.zoom();
 axisContainer.call(zoomHandler);
 
+axisContainer.on('wheel', function (event) {
+	var dx = d3.event.wheelDeltaX;
+	var dy = d3.event.wheelDeltaY;
+
+	if (Math.abs(dy) > Math.abs(dx)) {
+		return
+	}
+
+	var d = tScale.domain();
+	var s = d[1] - d[0];
+
+	tScale.domain(d.map(function (v) {
+		return v - dx*s*0.0005;
+	}));
+
+	zoomHandler.x(tScale);
+});
+
 zoomHandler.on('zoom', function () {
 	// console.log(d3.event.translate);
 	updateDisplay();
 });
 
-document.body.addEventListener('wheel', function (event) {
-	console.log(event);
-});
 
 
 var sortData = function (data) {
