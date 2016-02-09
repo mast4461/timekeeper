@@ -19,3 +19,4 @@ Data is autosaved in localStorage, if localStorage is available. Data can also b
 - Toggle for auto update.
 - Better default filename.
 - Tabbed views? E.g. diagram view, list view, sums view.
+- Tickmark on time at cursor when hovering over graph.
