@@ -1,4 +1,5 @@
 #right-column
+	position: relative
 	ul.activities
 		background-color: $background-color
 		margin: 0
@@ -12,6 +13,26 @@
 
 	.switch
 		cursor: pointer
+		position: absolute
+		right: 0
+		height: 100%
+		width: 40px
+		background-color: #009705
+		line-height: 135%
+
+		color: #000
+		text-align: center
+		font:
+			weight: 100
+			size: 30px
+
+		&.active
+			background-color: #A6E22D
+
+	textarea
+		width: 100%
+		position: absolute
+		top: 100%
 
 	// ::placeholder
 	// 	color: rgba(255,255,255,0.9)
