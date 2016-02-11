@@ -555,24 +555,17 @@ window.onresize = onResize;
 
 // onSubmitActivity is declared in a script element in index.html
 onSubmitActivity = function () {
+	setTimeout(function () {
+		var inputElement = document.getElementById('activity-name-input');
+		var activityName = inputElement.value;
+		inputElement.value = '';
+		inputElement.blur();
 
-	var inputElement = document.getElementById('activity-name-input');
-	var activityName = inputElement.value;
-	inputElement.value = '';
-	inputElement.blur();
-	addNewActivity(activityName);
-
-	updateDisplay();
-
+		activityNames.push(activityName);
+		updateIScale();
+		switchToActivity(null, activityNames.length - 1);
+	});
 	return false;
-};
-
-var addNewActivity = function (activityName) {
-	activityNames.push(activityName);
-	updateIScale();
-	updateDisplay();
-	switchToActivity(null, activityNames.length - 1);
-	saveData();
 };
 
 var switchToActivity = function (d, i) {
