@@ -14,6 +14,8 @@ body, html, input {
   width: 100%; }
   #chart-container svg {
     background-color: #ddd; }
+    #chart-container svg #svg-background {
+      cursor: cell; }
     #chart-container svg #circle-container circle {
       fill: #fff;
       stroke: #333;
