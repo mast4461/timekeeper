@@ -8,7 +8,7 @@
 	<link rel="stylesheet" type="text/css" href="dist/main.css">
 
 	<!-- External scripts -->
-	<script src="http://d3js.org/d3.v3.min.js"></script>
+	<script type="text/javascript" src="./node_modules/d3/d3.min.js"></script>
 </head>
 <body>
 <!-- Section for menu buttons -->
@@ -29,6 +29,8 @@
 			<form onSubmit="return onSubmitActivity();">
 				<input type="text" id="activity-name-input" class="block" placeholder="Enter new activity here">
 			</form>
+			<textarea id="comment-edit" rows="5"></textarea>
+			Auto update: <input type="checkbox" id="auto-update">
 		</div>
 	</div>
 
@@ -37,6 +39,11 @@
 <!-- Section for summing times of different activities -->
 <section id="sums">
 	<table id="activities"></table>
+</section>
+
+<!-- Section for reports -->
+<section id="sums">
+	<textarea rows="50" style="width: 100%;" id="report" readonly></textarea>
 </section>
 
 <!-- Internal scripts -->
