@@ -608,7 +608,9 @@ var newDataPoint = function (i, t) {
 };
 
 svgBackground.on('click', function () {
-	console.log(d3.event);
+	if (!d3.event.shiftKey) {
+		return;
+	}
 	var i = Math.round(iScale.invert(d3.event.offsetY));
 	var t = tScale.invert(d3.event.offsetX);
 	newDataPoint(i, t);
