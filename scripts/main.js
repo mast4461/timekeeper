@@ -84,6 +84,7 @@ var svgBackground = svg.append('rect')
 	.attr('width', '100%')
 	.attr('height', '100%')
 	.attr('fill', 'rgba(0,0,0,0)')
+	.attr('id', 'svg-background')
 ;
 var defs = svg.append('defs');
 var lineContainer = svg.append('g').attr('id', 'line-container');
@@ -211,8 +212,14 @@ var yFunction = function (d) {
 	return iScale(d.i);
 };
 
+var resetChart = function () {
+	lineContainer.selectAll('*').remove();
+	updateDisplay();
+	data = copyData(sortedData);
+};
+
 var dragCircle = d3.behavior.drag()
-	.on('dragstart', function () {
+	.on('dragstart', function (d, i) {
 		deactivateUpdateDisplayTimer();
 
 		var target = d3.select(this);
@@ -315,7 +322,7 @@ var updateDisplay = function () {
 
 	updateChart(sums, intervals);
 	updateActivities(sums);
-	setActiveActivity(sortedData[sortedData.length-1].i);
+	setActiveActivity(sortedData.last().i);
 
 	sumsModule.updateDisplay(sums, activityNames);
 };
@@ -395,6 +402,16 @@ var updateChartBlocks = function (intervals) {
 		};
 	});
 
+	var onClick = function (d, i) {
+		if (d3.event.shiftKey) {
+			data.splice(i, 1);
+			resetChart();
+			return;
+		} else {
+			setActiveShift(d)
+		}
+	};
+
 
 	// Background rectangles
 	var rects = lineContainer.selectAll('rect').data(rectData);
@@ -402,7 +419,7 @@ var updateChartBlocks = function (intervals) {
 	rects
 		.enter()
 		.append('rect')
-		.on('click', setActiveShift)
+		.on('click', onClick)
 	;
 
 
@@ -436,7 +453,7 @@ var updateChartBlocks = function (intervals) {
 	texts
 		.enter()
 		.append('text')
-		.on('click', setActiveShift)
+		.on('click', onClick)
 	;
 
 	texts
@@ -579,17 +596,24 @@ var setActiveActivity = function (i) {
 	d3.select(switches[0][i]).classed('active', true);
 };
 
-var newDataPoint = function (i) {
+var newDataPoint = function (i, t) {
 	data.push({
 		i: i,
-		t: tNow,
+		t: t || tNow,
 		c: "<comment>",
 	});
 
 	saveData();
-
 	onResize();
 };
+
+svgBackground.on('click', function () {
+	console.log(d3.event);
+	var i = Math.round(iScale.invert(d3.event.offsetY));
+	var t = tScale.invert(d3.event.offsetX);
+	newDataPoint(i, t);
+	resetChart();
+});
 
 var activateUpdateDisplayTimer = function () {
 	updateDisplayTimer = util.setIntervalNow(function () {
