@@ -96,20 +96,25 @@ var timeAxis = d3.svg.axis()
 var zoomHandler = d3.behavior.zoom();
 axisContainer.call(zoomHandler);
 
+// Panning along x-axis
 axisContainer.on('wheel', function (event) {
 	var dx = d3.event.wheelDeltaX;
 	var dy = d3.event.wheelDeltaY;
+
+	// About 20 milliseconds between events
 
 	if (Math.abs(dy) > Math.abs(dx)) {
 		return
 	}
 
-	var d = tScale.domain();
-	var s = d[1] - d[0];
+	var translation = dx*0.25;
 
-	tScale.domain(d.map(function (v) {
-		return v - dx*s*0.0005;
-	}));
+	var r = tScale.range();
+	var d = r.map(function (v) {
+		return tScale.invert(v - translation);
+	});
+
+	tScale.domain(d);
 
 	zoomHandler.x(tScale);
 });
@@ -122,10 +127,9 @@ zoomHandler.on('zoom', function () {
 
 
 var sortData = function (data) {
-	data.sort(function (a,b) {
-		return a.t-b.t;
+	return data.sort(function (a, b) {
+		return a.t - b.t;
 	});
-	return data;
 };
 
 var copyData = function (data) {
@@ -204,69 +208,63 @@ var lineFunction = d3.svg.line()
 ;
 
 var dragCircle = d3.behavior.drag()
-	.on('dragstart',
-		function () {
-			deactivateUpdateDisplayTimer();
+	.on('dragstart', function () {
+		deactivateUpdateDisplayTimer();
 
-			var target = d3.select(this);
-			var x = target.attr('cx');
-			var t = tScale.invert(x);
+		var target = d3.select(this);
+		var x = target.attr('cx');
+		var t = tScale.invert(x);
 
-			circleContainer
-				.append('text')
-				.attr('text-anchor', 'middle')
-				.attr('x', x)
-				.attr('y', parseInt(target.attr('cy')) - r)
-				.text('' + timeModule.timeMs2Hhmm(t))
-			;
-		}
-	)
-	.on('drag',
-		function (d, i) {
-			var target = d3.select(this);
+		circleContainer
+			.append('text')
+			.attr('text-anchor', 'middle')
+			.attr('x', x)
+			.attr('y', parseInt(target.attr('cy')) - r)
+			.text('' + timeModule.timeMs2Hhmm(t))
+		;
+	})
+	.on('drag',	function (d, i) {
+		var target = d3.select(this);
 
-			var x = d3.event.x;
-			var y = d3.event.y;
-			// target.attr('cy', y);
+		var x = d3.event.x;
+		var y = d3.event.y;
+		// target.attr('cy', y);
 
-			var t = tScale.invert(x);
-			var iNew = Math.round(iScale.invert(y));
-			data[i].t = t;
-			data[i].i = iNew;
+		var t = tScale.invert(x);
+		var iNew = Math.round(iScale.invert(y));
+		data[i].t = t;
+		data[i].i = iNew;
 
-			target.attr('cx', x);
-			target.attr('cy', y);
+		target.attr('cx', x);
+		target.attr('cy', y);
 
-			circleContainer
-				.select('text')
-				.attr('x', x)
-				.attr('y', iScale(iNew) - r)
-				.text('' + timeModule.timeMs2Hhmm(t))
-			;
+		circleContainer
+			.select('text')
+			.attr('x', x)
+			.attr('y', iScale(iNew) - r)
+			.text('' + timeModule.timeMs2Hhmm(t))
+		;
 
-			updateDisplay();
-		}
-	)
-	.on('dragend',
-		function () {
-			// Update the last data point
-			updateLastTime(data);
+		updateDisplay();
+	})
+	.on('dragend', function () {
+		// Update the last data point
+		updateLastTime(data);
 
-			// Update the graphics
-			updateDisplay();
+		// Update the graphics
+		updateDisplay();
 
-			data = copyData(sortedData);
+		data = copyData(sortedData);
 
-			circleContainer
-				.selectAll('text')
-				.remove()
-			;
+		circleContainer
+			.selectAll('text')
+			.remove()
+		;
 
-			activateUpdateDisplayTimer();
+		activateUpdateDisplayTimer();
 
-			saveData();
-		}
-	)
+		saveData();
+	})
 ;
 
 var sums;
@@ -274,7 +272,7 @@ var updateDisplay = function () {
 	// Copy the data and sort it
 	sortedData = sortData(copyData(data));
 
-	// Set i of the first circle to that of the last circle
+	// Set i of the first circle to that of the second circle
 	sortedData[0].i = sortedData[1].i;
 
 	// Sum the time on each activity
@@ -289,7 +287,14 @@ var updateDisplay = function () {
 	axisContainer.call(timeAxis);
 	timeAxis.ticks(5);
 
+	updateChart(sums, sortedData);
+	updateActivities(sums);
+	setActiveActivity(sortedData[sortedData.length-1].i);
 
+	sumsModule.updateDisplay(sums, activityNames);
+};
+
+var updateChart = function (sums, sortedData) {
 	// Horizontal lines for each activity
 	var lines = lineContainer.selectAll('line').data(sums);
 	lines
@@ -332,6 +337,9 @@ var updateDisplay = function () {
 		.attr('cy', yFunction)
 		.attr('r', r)
 	;
+};
+
+var updateActivities = function (sums) {
 
 	// Create divs for all activities
 	var activities = activitiesList
@@ -384,13 +392,6 @@ var updateDisplay = function () {
 		.style('height', hUnit + 'px')
 		.style('line-height', hUnit/2 + 'px')
 	;
-
-
-	sumsModule.updateDisplay(sums, activityNames);
-	// printData(sortedData);
-
-	// printData(sums);
-
 };
 
 
