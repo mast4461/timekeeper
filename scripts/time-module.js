@@ -2,23 +2,15 @@ var now = function() {
 	return (new Date()).getTime();
 };
 
-var sum = function(data, activityNames) {
-	// Initialize array of zeros
-	var timeArray = activityNames.map(function() {return 0;});
-
-	// For each point in the data except the earliest
-	for (var k = 1; k < data.length; k++) {
-		// Calculate the time difference to the previous point
-		var i = data[k].i;
-		var t = data[k].t - data[k-1].t;
-
-		// Add the time for the activity
-		timeArray[i] += t;
-	}
+var sum = function (intervals, activityNames) {
+	var sums = activityNames.map(function () { return 0; });
+	intervals.forEach(function (interval) {
+		sums[interval.i] += interval.t2 - interval.t1;
+	});
 
 	// Return array of indices and durations
-	return timeArray.map(function(t, i) {
-		return {i:i, t:t};
+	return sums.map(function (sum, i) {
+		return { i: i, t: sum };
 	});
 };
 

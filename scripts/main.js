@@ -4,6 +4,7 @@ var timeModule = require('./time-module');
 var sumsModule = require('./sums-module');
 var fileModule = require('./file-module');
 var persistenceModule = require('./persistence-module');
+var reportModule = require('./report-module');
 var util = require('./util');
 
 
@@ -11,11 +12,17 @@ var util = require('./util');
 var hUnit = 50;
 var r = 10;
 var wMargin = 4*r;
-var finished = false;
 var sortedData;
 
 var updateDisplayTimer;
+var tNow;
 
+
+var g = function (key) {
+	return function(obj) {
+		return obj[key];
+	};
+};
 
 // Add button listeners
 d3.select('section#menu #save')
@@ -31,8 +38,11 @@ d3.select('section#menu #load')
 	.on('change', function () {
 		fileModule.load().then(function (loadedData) {
 			console.log(loadedData);
+			activitiesList.selectAll('*').remove();
 			data = loadedData.data;
 			activityNames = loadedData.activityNames;
+			updateIScale();
+			updateTScale();
 		});
 	})
 ;
@@ -75,16 +85,17 @@ var svgBackground = svg.append('rect')
 	.attr('height', '100%')
 	.attr('fill', 'rgba(0,0,0,0)')
 ;
+var defs = svg.append('defs');
 var lineContainer = svg.append('g').attr('id', 'line-container');
 var pathContainer = svg.append('g').attr('id', 'path-container');
 var circleContainer = svg.append('g').attr('id', 'circle-container');
+var nowLineContainer = svg.append('g').attr('id', 'now-line-container');
 var axisContainer = svg.append('g').attr('id', 'axis-container');
 axisContainer
 	.append('rect')
 	.attr('width', '100%')
 	.attr('height', '36')
 	.attr('transform', 'translate(0, -36)')
-	.attr('fill', 'rgba(0,0,0,0.5)')
 ;
 
 var timeAxis = d3.svg.axis()
@@ -127,7 +138,7 @@ zoomHandler.on('zoom', function () {
 
 
 var sortData = function (data) {
-	return data.sort(function (a, b) {
+	return data.slice().sort(function (a, b) {
 		return a.t - b.t;
 	});
 };
@@ -200,13 +211,6 @@ var yFunction = function (d) {
 	return iScale(d.i);
 };
 
-// Helper for drawing path
-var lineFunction = d3.svg.line()
-	.x(xFunction)
-	.y(yFunction)
-	.interpolate('step-before')
-;
-
 var dragCircle = d3.behavior.drag()
 	.on('dragstart', function () {
 		deactivateUpdateDisplayTimer();
@@ -249,7 +253,6 @@ var dragCircle = d3.behavior.drag()
 	})
 	.on('dragend', function () {
 		// Update the last data point
-		updateLastTime(data);
 
 		// Update the graphics
 		updateDisplay();
@@ -267,16 +270,39 @@ var dragCircle = d3.behavior.drag()
 	})
 ;
 
-var sums;
+var toIntervals = function (data) {
+	var d = sortData(data);
+	d.push({
+		t: Math.max(d.last().t, tNow)
+	});
+
+	var intervals = [];
+	for (var i = 0; i < data.length; i += 1) {
+		var di = d[i];
+		intervals.push({
+			i: di.i,
+			c: di.c,
+			t1: di.t,
+			t2: d[i + 1].t
+		});
+	}
+
+	return intervals;
+};
+
 var updateDisplay = function () {
 	// Copy the data and sort it
 	sortedData = sortData(copyData(data));
+	var intervals = toIntervals(data);
 
-	// Set i of the first circle to that of the second circle
-	sortedData[0].i = sortedData[1].i;
+	reportModule.writeReport(intervals, sums, activityNames);
+
+	var now = { t: tNow, i: sortedData.last().i };
+	updateNowLine([now]);
 
 	// Sum the time on each activity
-	sums = timeModule.sum(sortedData, activityNames);
+	// sums = timeModule.sum(sortedData, activityNames);
+	sums = timeModule.sum(intervals, activityNames);
 
 	// Rescale the chart container if necessary
 	var height = activityNames.length*hUnit + 36
@@ -287,41 +313,49 @@ var updateDisplay = function () {
 	axisContainer.call(timeAxis);
 	timeAxis.ticks(5);
 
-	updateChart(sums, sortedData);
+	updateChart(sums, intervals);
 	updateActivities(sums);
 	setActiveActivity(sortedData[sortedData.length-1].i);
 
 	sumsModule.updateDisplay(sums, activityNames);
 };
 
-var updateChart = function (sums, sortedData) {
+var updateNowLine = function (data) {
+	var nowLine = nowLineContainer.selectAll('line').data(data)
+	nowLine.exit().remove();
+	nowLine
+		.enter()
+		.append('line')
+	;
+
+	nowLine
+		.attr('x1', xFunction)
+		.attr('x2', xFunction)
+		.attr('y1', 0)
+		.attr('y2', '100%')
+	;
+};
+
+var updateChart = function (sums, intervals) {
 	// Horizontal lines for each activity
 	var lines = lineContainer.selectAll('line').data(sums);
+	lines.exit().remove();
 	lines
 		.enter()
 		.append('line')
 	;
-	lines.exit().remove();
 	lines
 		.attr('x1', 0)
-		.attr('x2', "100%")
+		.attr('x2', '100%')
 		.attr('y1', yFunction)
 		.attr('y2', yFunction)
 	;
 
-	// Update the path
-	var lineGraph = pathContainer.selectAll('path').data([sortedData])
-	lineGraph
-		.enter()
-		.append('path')
-	;
-	lineGraph.exit().remove();
-	lineGraph
-		.attr('d', lineFunction)
-	;
+	updateChartBlocks(intervals);
 
 	// Join the data for the circles
-	var circles = circleContainer.selectAll('circle').data(sortedData);
+	var circles = circleContainer.selectAll('circle').data(intervals);
+	circles.exit().remove();
 
 	// Create elements for new circles and add drag handler
 	circles
@@ -329,14 +363,101 @@ var updateChart = function (sums, sortedData) {
 		.append('circle')
 		.call(dragCircle)
 	;
-	circles.exit().remove();
 
 	// Update attributes for all updating circles
 	circles
-		.attr('cx', xFunction)
-		.attr('cy', yFunction)
+		.attr('cx', util.compose(tScale, g('t1')))
+		.attr('cy', util.compose(iScale, g('i')))
 		.attr('r', r)
 	;
+};
+
+var updateChartLines = function () {
+
+};
+
+var updateChartBlocks = function (intervals) {
+	var height = Math.abs(iScale(1) - iScale(0));
+	var halfHeight = height/2;
+	rectData = intervals.map(function (d, i) {
+		var x1 = tScale(d.t1);
+		var x2 = tScale(d.t2);
+		var y = iScale(d.i);
+		return {
+			width: x2-x1,
+			y: y,
+			x: x1,
+			transform: 'translate(' + x1 + ',' + (y - halfHeight) + ')',
+			i: i,
+			t: d.t1,
+			c: d.c,
+			clipPathId: 'textClipPath' + i
+		};
+	});
+
+
+	// Background rectangles
+	var rects = lineContainer.selectAll('rect').data(rectData);
+	rects.exit().remove();
+	rects
+		.enter()
+		.append('rect')
+		.on('click', setActiveShift)
+	;
+
+
+	rects
+		.attr('width', g('width'))
+		.attr('height', height)
+		.attr('transform', g('transform'))
+	;
+
+	// Clip paths
+	clipPaths = defs.selectAll('clipPath').data(rectData);
+	clipPaths.exit().remove();
+	clipPaths
+		.enter()
+		.append('clipPath')
+		.attr('id', g('clipPathId'))
+		.append('rect')
+	;
+
+	clipRects = defs.selectAll('rect').data(rectData);
+	clipRects
+		.attr('width', g('width'))
+		.attr('height', height)
+		.attr('transform', g('transform'))
+		.attr('fill', 'black')
+	;
+
+	// Text
+	var texts = lineContainer.selectAll('text').data(rectData)
+	texts.exit().remove();
+	texts
+		.enter()
+		.append('text')
+		.on('click', setActiveShift)
+	;
+
+	texts
+		.attr('x', function (d) { return d.x + 12;	})
+		.attr('y', function (d) { return d.y; })
+		.text(g('c'))
+		.attr('clip-path', function (d) { return 'url(#' + d.clipPathId + ')'; })
+	;
+
+};
+
+var setActiveShift = function (d) {
+	var textArea = d3.select('#comment-edit')
+		.on('input', function () {
+			data[d.i].c = this.value;
+			saveData();
+			updateDisplay();
+		})
+	;
+	textArea.node().value = data[d.i].c || "";
+	textArea.node().focus();
 };
 
 var updateActivities = function (sums) {
@@ -346,6 +467,7 @@ var updateActivities = function (sums) {
 		.selectAll('.activity')
 		.data(sums)
 	;
+	activities.exit().remove();
 
 	var newActivities = activities
 		.enter()
@@ -369,6 +491,7 @@ var updateActivities = function (sums) {
 		})
 		.on('input', function (d, i) {
 			activityNames[i] = this.value;
+			updateDisplay();
 		})
 	;
 
@@ -379,14 +502,9 @@ var updateActivities = function (sums) {
 
 	activitiesList.selectAll('.time')
 		.data(sums)
-		.text(function (d) {
-			return timeModule.durationMsToString(d.t);
-		})
+		.text(util.compose(timeModule.durationMsToString, g('t')))
 	;
 
-
-
-	activities.exit().remove();
 
 	activities
 		.style('height', hUnit + 'px')
@@ -437,7 +555,6 @@ window.onresize = onResize;
 
 // onSubmitActivity is declared in a script element in index.html
 onSubmitActivity = function () {
-	updateLastTime(data);
 
 	var inputElement = document.getElementById('activity-name-input');
 	var activityName = inputElement.value;
@@ -472,7 +589,8 @@ var setActiveActivity = function (i) {
 var newDataPoint = function (i) {
 	data.push({
 		i: i,
-		t: timeModule.now()
+		t: tNow,
+		c: "<comment>",
 	});
 
 	saveData();
@@ -480,15 +598,9 @@ var newDataPoint = function (i) {
 	onResize();
 };
 
-var updateLastTime = function (data) {
-	if (!finished) {
-		data[data.length-1].t = timeModule.now();
-	}
-};
-
 var activateUpdateDisplayTimer = function () {
 	updateDisplayTimer = util.setIntervalNow(function () {
-		updateLastTime(data);
+		tNow = timeModule.now();
 		updateDisplay();
 	}, 1000);
 };
@@ -496,6 +608,14 @@ var activateUpdateDisplayTimer = function () {
 var deactivateUpdateDisplayTimer = function () {
 	clearInterval(updateDisplayTimer);
 };
+
+d3.select('#auto-update').on('click', function () {
+	if (this.checked) {
+		activateUpdateDisplayTimer();
+	} else {
+		deactivateUpdateDisplayTimer();
+	}
+}).node().checked = true;
 
 var saveData = function () {
 	persistenceModule.saveData({
@@ -518,6 +638,6 @@ loadData();
 
 updateTScale();
 updateIScale();
-onResize();
 activateUpdateDisplayTimer();
+onResize();
 setActiveActivity(data[data.length-1].i);

@@ -1,3 +1,13 @@
+Array.prototype.last = function() {
+	return this[this.length - 1];
+};
+
+exports.compose = function (func1, func2) {
+	return function() {
+		return func1(func2.apply(null, arguments));
+	};
+};
+
 exports.clamp = function (x, a, b) {
 	a = a || -Infinity;
 	b = b || Infinity;
