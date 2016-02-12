@@ -15,7 +15,8 @@ var wMargin = 4*r;
 var sortedData;
 
 var updateDisplayTimer;
-var tNow;
+var tNow = timeModule.now();
+var autoUpdate = true;
 
 
 var g = function (key) {
@@ -629,26 +630,34 @@ var deactivateUpdateDisplayTimer = function () {
 };
 
 d3.select('#auto-update').on('click', function () {
-	if (this.checked) {
+	autoUpdate = this.checked;
+	if (autoUpdate) {
 		activateUpdateDisplayTimer();
 	} else {
 		deactivateUpdateDisplayTimer();
 	}
+	saveData();
 }).node().checked = true;
 
 var saveData = function () {
 	persistenceModule.saveData({
 		data: data,
-		activityNames: activityNames
+		activityNames: activityNames,
+		autoUpdate: autoUpdate,
+		tNow: tNow
 	});
 };
 
 var loadData = function () {
 	var loadedData = persistenceModule.loadData();
+	console.log(loadedData);
 	if (loadedData) {
 		data = loadedData.data;
 		activityNames = loadedData.activityNames;
+		autoUpdate = loadedData.autoUpdate;
+		tNow = loadedData.tNow;
 	}
+	console.log(autoUpdate, tNow);
 	updateIScale();
 	updateTScale();
 };
@@ -657,6 +666,8 @@ loadData();
 
 updateTScale();
 updateIScale();
-activateUpdateDisplayTimer();
+if (autoUpdate) {
+	activateUpdateDisplayTimer();
+}
 onResize();
-setActiveActivity(data[data.length-1].i);
+setActiveActivity(data.last().i);
