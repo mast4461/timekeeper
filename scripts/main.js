@@ -205,6 +205,29 @@ var updateIScale = function () {
 	;
 };
 
+var saveData = function () {
+	persistenceModule.saveData({
+		data: data,
+		activityNames: activityNames,
+		autoUpdate: autoUpdate,
+		tNow: tNow
+	});
+};
+
+var loadData = function () {
+	var loadedData = persistenceModule.loadData();
+	if (loadedData) {
+		data = loadedData.data;
+		activityNames = loadedData.activityNames;
+		autoUpdate = loadedData.autoUpdate;
+		tNow = loadedData.tNow;
+	}
+	updateIScale();
+	updateTScale();
+};
+
+loadData();
+
 var xFunction = function (d) {
 	return tScale(d.t);
 };
@@ -272,7 +295,9 @@ var dragCircle = d3.behavior.drag()
 			.remove()
 		;
 
-		activateUpdateDisplayTimer();
+		if (autoUpdate) {
+			activateUpdateDisplayTimer();
+		}
 
 		saveData();
 	})
@@ -637,32 +662,7 @@ d3.select('#auto-update').on('click', function () {
 		deactivateUpdateDisplayTimer();
 	}
 	saveData();
-}).node().checked = true;
-
-var saveData = function () {
-	persistenceModule.saveData({
-		data: data,
-		activityNames: activityNames,
-		autoUpdate: autoUpdate,
-		tNow: tNow
-	});
-};
-
-var loadData = function () {
-	var loadedData = persistenceModule.loadData();
-	console.log(loadedData);
-	if (loadedData) {
-		data = loadedData.data;
-		activityNames = loadedData.activityNames;
-		autoUpdate = loadedData.autoUpdate;
-		tNow = loadedData.tNow;
-	}
-	console.log(autoUpdate, tNow);
-	updateIScale();
-	updateTScale();
-};
-
-loadData();
+}).node().checked = autoUpdate;
 
 updateTScale();
 updateIScale();
