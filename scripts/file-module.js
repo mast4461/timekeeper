@@ -1,15 +1,15 @@
 // Credit to https://thiscouldbebetter.wordpress.com/2012/12/18/loading-editing-and-saving-a-text-file-in-html5-using-javascrip/
 
-var save = function(data) {
+var save = function(data, fileName) {
 	var textFileAsBlob = new Blob(
 		[JSON.stringify(data, null, 2)],
 		{type:'application/json'}
 	);
 
-	var fileNameToSaveAs = "timekeeper " + (new Date()).toString();
+	var fileName = fileName || "timekeeper " + (new Date()).toString();
 
 	var downloadLink = document.createElement("a");
-	downloadLink.download = fileNameToSaveAs;
+	downloadLink.download = fileName;
 	downloadLink.innerHTML = "Download File";
 
 	downloadLink.href = URL.createObjectURL(textFileAsBlob);

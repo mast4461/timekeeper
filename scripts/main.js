@@ -28,10 +28,12 @@ var g = function (key) {
 // Add button listeners
 d3.select('section#menu #save')
 	.on('click', function () {
+		var tStart = data[0].t;
+		var fileName = "timekeeper " + (new Date(tStart).toDateString());
 		fileModule.save({
 			data: data,
 			activityNames: activityNames
-		});
+		}, fileName);
 	})
 ;
 
