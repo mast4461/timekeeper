@@ -5,6 +5,7 @@ try {
 	delete storage[x];
 	var key = 'timekeeper-data';
 } catch(e) {
+	alert("Warning: localStorage not available. Your data will not be autosaved." + e);
 	console.log(e);
 	storage = null;
 }
