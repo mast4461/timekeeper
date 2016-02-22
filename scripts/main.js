@@ -412,8 +412,6 @@ var updateChartLines = function () {
 };
 
 var updateChartBlocks = function (intervals) {
-	var height = Math.abs(iScale(1) - iScale(0));
-	var halfHeight = height/2;
 	rectData = intervals.map(function (d, i) {
 		var x1 = tScale(d.t1);
 		var x2 = tScale(d.t2);
@@ -422,7 +420,7 @@ var updateChartBlocks = function (intervals) {
 			width: x2-x1,
 			y: y,
 			x: x1,
-			transform: 'translate(' + x1 + ',' + (y - halfHeight) + ')',
+			transform: 'translate(' + x1 + ',' + (y - hUnit/2) + ')',
 			i: i,
 			t: d.t1,
 			c: d.c,
@@ -453,7 +451,7 @@ var updateChartBlocks = function (intervals) {
 
 	rects
 		.attr('width', g('width'))
-		.attr('height', height)
+		.attr('height', hUnit)
 		.attr('transform', g('transform'))
 	;
 
@@ -470,7 +468,7 @@ var updateChartBlocks = function (intervals) {
 	clipRects = defs.selectAll('rect').data(rectData);
 	clipRects
 		.attr('width', g('width'))
-		.attr('height', height)
+		.attr('height', hUnit)
 		.attr('transform', g('transform'))
 		.attr('fill', 'black')
 	;

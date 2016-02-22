@@ -14,7 +14,6 @@ Data is autosaved in localStorage, if localStorage is available. Data can also b
 - Change file export format to more human readable, and with more stats.
 - Autosave everything, but only when data actually changes.
 - Better tickmarks for time axis. Position tickmarks on more logical timepoints. Include date in tickmarks.
-- Toggle for auto update.
 - Tabbed views? E.g. diagram view, list view, sums view.
 - Tickmark on time at cursor when hovering over graph.
 - Show length of each shift somehow.
