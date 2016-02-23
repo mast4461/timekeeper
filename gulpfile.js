@@ -1,8 +1,8 @@
 var gulp			= require('gulp'),
 	browserify		= require('gulp-browserify'),
-	sass			= require('gulp-ruby-sass'),
-	browserSync 	= require('browser-sync'),
-	reload			= browserSync.reload;
+	sass			= require('gulp-ruby-sass');
+	// browserSync 	= require('browser-sync'),
+	// reload			= browserSync.reload;
 
 
 //Tasks  regarding scripts--------------------------------------------------|
@@ -21,6 +21,8 @@ gulp.task('sass', function(){
 	return sass('styles/main.sass')
 		.pipe(gulp.dest('dist'))
 });
+
+gulp.task('build', ['scripts', 'sass']);
 
 //Live reload--------------------------------------------------------------------|
 var liveReload = function () {
