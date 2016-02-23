@@ -42,7 +42,6 @@ d3.select('section#menu #save')
 d3.select('section#menu #load')
 	.on('change', function () {
 		fileModule.load().then(function (loadedData) {
-			console.log(loadedData);
 			activitiesList.selectAll('*').remove();
 			data = loadedData.data;
 			activityNames = loadedData.activityNames;
@@ -104,11 +103,7 @@ axisContainer
 	.attr('transform', 'translate(0, -36)')
 ;
 
-var timeAxis = d3.svg.axis()
-	.ticks(5)
-	.orient('top')
-	.tickFormat(timeModule.timeMs2Hhmm)
-;
+var timeAxis = d3.svg.axis().orient('top');
 
 var zoomHandler = d3.behavior.zoom();
 axisContainer.call(zoomHandler);
@@ -137,8 +132,14 @@ axisContainer.on('wheel', function (event) {
 });
 
 zoomHandler.on('zoom', function () {
+	updateDScale();
 	updateDisplay();
 });
+
+
+var getSvgWidth = function () {
+	return parseInt(svg.style('width'));
+};
 
 var getLatestTime = function () {
 	return Math.max(data.last().t, tNow);
@@ -159,19 +160,29 @@ var printData = function (data) {
 	data.forEach(function (item){
 		str += "\nt: " + item.t + " i: " + item.i;
 	});
-	console.log(str);
 };
 
 var durationMin = 5*60*1000;
 
 var tScale = d3.scale.linear();
 var iScale = d3.scale.linear();
+var dScale = d3.time.scale();
 
 
 var updateTScale = function () {
-	var w = parseInt(svg.style('width'));
-	var tRange = [0, w];
+	updateTScaleRange();
+	updateTScaleDomain();
 
+	zoomHandler.x(tScale);
+
+	updateDScale();
+};
+
+var updateTScaleRange = function () {
+	tScale.range([0, getSvgWidth()]);
+};
+
+var updateTScaleDomain = function () {
 	var tDomain = [data[0].t, getLatestTime()];
 
 	if (tDomain[1] - tDomain[0] < durationMin) {
@@ -182,13 +193,17 @@ var updateTScale = function () {
 	tDomain[0] -= tMargin;
 	tDomain[1] += tMargin;
 
-	tScale
-		.domain(tDomain)
-		.range(tRange)
+	tScale.domain(tDomain);
+};
+
+var updateDScale = function () {
+	var tDomain = tScale.domain();
+	dScale
+		.domain([new Date(tDomain[0]), new Date(tDomain[1])])
+		.range(tScale.range())
 	;
 
-	timeAxis.scale(tScale);
-	zoomHandler.x(tScale);
+	timeAxis.scale(dScale);
 };
 
 var updateIScale = function () {
@@ -216,7 +231,12 @@ var loadData = function () {
 		data = loadedData.data;
 		activityNames = loadedData.activityNames;
 		autoUpdate = loadedData.autoUpdate;
-		tNow = loadedData.tNow;
+
+		if (autoUpdate) {
+			tNow = Date.now();
+		} else {
+			tNow = loadedData.tNow;
+		}
 	}
 	updateIScale();
 	updateTScale();
@@ -340,7 +360,8 @@ var updateDisplay = function () {
 	// Update timeAxis
 	axisContainer.attr('transform', 'translate(0,' + height + ')');
 	axisContainer.call(timeAxis);
-	timeAxis.ticks(5);
+
+	timeAxis.ticks(Math.round(getSvgWidth()/95));
 
 	updateChart(sums, intervals);
 	updateActivities(sums);
@@ -549,10 +570,12 @@ var updateActivities = function (sums) {
 	;
 };
 
-
 var onResize = function () {
 	var svgWidth = parseInt(svg.style('width'));
-	tScale.range([0, svgWidth]);
+
+	var tRange = [0, getSvgWidth()];
+	tScale.range(tRange);
+	dScale.range(tRange);
 
 	fixZoomHandlerOnResize(svgWidth);
 
