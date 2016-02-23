@@ -11,7 +11,6 @@ var util = require('./util');
 // Declare variables
 var hUnit = 50;
 var r = 10;
-var wMargin = 4*r;
 var sortedData;
 
 var updateDisplayTimer;
@@ -24,6 +23,9 @@ var g = function (key) {
 		return obj[key];
 	};
 };
+
+gt = g('t');
+gi = g('i');
 
 // Add button listeners
 d3.select('section#menu #save')
@@ -135,11 +137,12 @@ axisContainer.on('wheel', function (event) {
 });
 
 zoomHandler.on('zoom', function () {
-	// console.log(d3.event.translate);
 	updateDisplay();
 });
 
-
+var getLatestTime = function () {
+	return Math.max(data.last().t, tNow);
+};
 
 var sortData = function (data) {
 	return data.slice().sort(function (a, b) {
@@ -159,26 +162,17 @@ var printData = function (data) {
 	console.log(str);
 };
 
-
-// Helper function for creating accessor function
-var df = function (key) {
-	return function (d) {
-		return d[key];
-	};
-};
-
-gt = df('t');
-gi = df('i');
-
-
 var durationMin = 5*60*1000;
 
-var tScale, iScale;
+var tScale = d3.scale.linear();
+var iScale = d3.scale.linear();
+
+
 var updateTScale = function () {
 	var w = parseInt(svg.style('width'));
-	// var tRange = [wMargin, w-wMargin];
 	var tRange = [0, w];
-	var tDomain = d3.extent(data, gt);
+
+	var tDomain = [data[0].t, getLatestTime()];
 
 	if (tDomain[1] - tDomain[0] < durationMin) {
 		tDomain[1] = tDomain[0] + durationMin;
@@ -188,7 +182,7 @@ var updateTScale = function () {
 	tDomain[0] -= tMargin;
 	tDomain[1] += tMargin;
 
-	tScale = d3.scale.linear()
+	tScale
 		.domain(tDomain)
 		.range(tRange)
 	;
@@ -200,7 +194,7 @@ var updateTScale = function () {
 var updateIScale = function () {
 	var iDomain = [0, activityNames.length-1];
 	var iRange = [hUnit*0.5,(iDomain[1]-iDomain[0]+0.5)*hUnit];
-	iScale = d3.scale.linear()
+	iScale
 		.domain(iDomain)
 		.rangeRound(iRange)
 		.clamp(true)
@@ -308,7 +302,7 @@ var dragCircle = d3.behavior.drag()
 var toIntervals = function (data) {
 	var d = sortData(data);
 	d.push({
-		t: Math.max(d.last().t, tNow)
+		t: getLatestTime()
 	});
 
 	var intervals = [];
@@ -402,7 +396,7 @@ var updateChart = function (sums, intervals) {
 	// Update attributes for all updating circles
 	circles
 		.attr('cx', util.compose(tScale, g('t1')))
-		.attr('cy', util.compose(iScale, g('i')))
+		.attr('cy', util.compose(iScale, gi))
 		.attr('r', r)
 	;
 };
@@ -545,7 +539,7 @@ var updateActivities = function (sums) {
 
 	activitiesList.selectAll('.time')
 		.data(sums)
-		.text(util.compose(timeModule.durationMsToString, g('t')))
+		.text(util.compose(timeModule.durationMsToString, gt))
 	;
 
 
