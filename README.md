@@ -20,3 +20,8 @@ Data is autosaved in localStorage, if localStorage is available. Data can also b
 - Prevent zooming while panning and panning while zooming when performing these actions by scrolling.
 - Button for fitting scale/translate to data.
 - Save current scale/translate with other data.
+- Fix graphical bug where lines end up on top of session-blocks.
+- Use UIDs for sessions and activities for referencing, instead of array indices? Would solve problem with sorting while dragging.
+- Activities list reorderable by user. Activities list sortable by criteria (e.g. by time spent, name. Order also reversible)
+- Individual, editable, colors for activities, with defaults chosen from some colormap.
+- Bar chart or other diagram showing which fractions of the total time was spent on the different tasks.
